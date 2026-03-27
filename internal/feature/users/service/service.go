@@ -20,6 +20,10 @@ type UsersRepository interface {
 		ctx context.Context,
 		id int,
 	) (domain.User, error)
+	DeleteUser(
+		ctx context.Context,
+		id int,
+	) error
 }
 
 type UsersService struct {
