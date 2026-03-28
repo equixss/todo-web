@@ -47,3 +47,36 @@ func (u *User) Validate() error {
 func NewUserUninitialized(name string, phone *string) User {
 	return NewUser(UninitializedID, UninitializedVersion, name, phone)
 }
+
+type UserPatch struct {
+	Name  Nullable[string]
+	Phone Nullable[string]
+}
+
+func (u *User) ApplyPatch(patch UserPatch) error {
+	if err := patch.Validate(); err != nil {
+		return fmt.Errorf("invalid patch: %w", err)
+	}
+
+	tmp := *u
+	if patch.Name.Set {
+		tmp.Name = *patch.Name.Value
+	}
+	if patch.Phone.Set {
+		tmp.Phone = patch.Phone.Value
+	}
+
+	if err := tmp.Validate(); err != nil {
+		return fmt.Errorf("invalid patch user: %w", err)
+	}
+
+	*u = tmp
+	return nil
+}
+
+func (p *UserPatch) Validate() error {
+	if p.Name.Set && p.Name.Value == nil {
+		return fmt.Errorf("'Name' can't be patched to null:%w", core_errors.ErrInvalidArgument)
+	}
+	return nil
+}
