@@ -13,7 +13,7 @@ env_clean:
 	@read -p "Are you sure you want to clean volumes, [y/N]: " answer; \
 	if [ "$$answer" = "y" ]; then \
 		docker-compose down --remove-orphans todo-postgres port-forwarder && \
-		rm -rf out/pgdata && \
+		rm -rf ${PROJECT_DIR}/out/pgdata && \
 		echo "Done"; \
 	else \
 		echo "Canceled"; fi
@@ -56,5 +56,5 @@ todo-run:
 	@export LOGGER_FOLDER=${PROJECT_DIR}/out/logs && \
 	export POSTGRES_HOST=localhost && \
 	go mod tidy && \
-	go run cmd/todo/main.go
+	go run ${PROJECT_DIR}/cmd/todo/main.go
 	
