@@ -15,6 +15,11 @@ type TasksRepository interface {
 		ctx context.Context,
 		id int,
 	) (domain.Task, error)
+	PatchTask(
+		ctx context.Context,
+		id int,
+		patch domain.Task,
+	) (domain.Task, error)
 	DeleteTask(
 		ctx context.Context,
 		id int,
