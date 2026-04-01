@@ -1,4 +1,4 @@
-package users_postgres_repository
+package tasks_postgres_repository
 
 import (
 	"context"
@@ -7,22 +7,21 @@ import (
 	core_errors "github.com/equixss/todo-web/internal/core/errors"
 )
 
-func (r *UsersRepository) DeleteUser(ctx context.Context, id int) error {
+func (r *TasksRepository) DeleteTask(ctx context.Context, id int) error {
 	ctx, cancel := context.WithTimeout(ctx, r.pool.OpTimeout())
 	defer cancel()
 
 	query := `
-		DELETE FROM todoapp.users
+		DELETE FROM todoapp.tasks
 		WHERE id = $1;
-	`
+`
+
 	cmdTag, err := r.pool.Exec(ctx, query, id)
 	if err != nil {
 		return fmt.Errorf("exec query: %w", err)
 	}
 	if cmdTag.RowsAffected() == 0 {
-		return fmt.Errorf("user with id %d not found:%w", id, core_errors.ErrNotFound)
+		return fmt.Errorf("task with id %d not found:%w", id, core_errors.ErrNotFound)
 	}
-
 	return nil
-
 }

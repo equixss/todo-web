@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	core_logger "github.com/equixss/todo-web/internal/core/logger"
+	core_http_utils "github.com/equixss/todo-web/internal/core/transport/http/request"
 	core_http_response "github.com/equixss/todo-web/internal/core/transport/http/response"
-	core_http_utils "github.com/equixss/todo-web/internal/core/transport/http/utils"
 )
 
 type GetUsersResponse []UserDTOResponse

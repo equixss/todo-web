@@ -7,7 +7,7 @@ import (
 
 	"github.com/equixss/todo-web/internal/core/domain"
 	core_errors "github.com/equixss/todo-web/internal/core/errors"
-	"github.com/jackc/pgx/v5"
+	core_postgres_pool "github.com/equixss/todo-web/internal/core/repository/postgres/pool"
 )
 
 func (r *UsersRepository) PatchUser(
@@ -35,7 +35,7 @@ func (r *UsersRepository) PatchUser(
 		&model.Phone,
 	)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, core_postgres_pool.ErrNoRows) {
 			return domain.User{}, fmt.Errorf(
 				"user with id='%d' concurrently accessed:%w",
 				id,
