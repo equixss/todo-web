@@ -57,4 +57,9 @@ todo-run:
 	export POSTGRES_HOST=localhost && \
 	go mod tidy && \
 	go run ${PROJECT_DIR}/cmd/todo/main.go
+
+todo-deploy:
+	@docker compose up -d --build todo
 	
+ps:
+	@docker compose ps -a
