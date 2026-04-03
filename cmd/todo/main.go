@@ -8,10 +8,14 @@ import (
 	"syscall"
 	"time"
 
+	core_config "github.com/equixss/todo-web/internal/core/config"
 	core_logger "github.com/equixss/todo-web/internal/core/logger"
 	"github.com/equixss/todo-web/internal/core/repository/postgres/pool/pgx"
 	core_http_middleware "github.com/equixss/todo-web/internal/core/transport/http/middleware"
 	core_http_server "github.com/equixss/todo-web/internal/core/transport/http/server"
+	statistics_repository "github.com/equixss/todo-web/internal/feature/statistics/repository"
+	statistics_service "github.com/equixss/todo-web/internal/feature/statistics/service"
+	statistics_transport_http "github.com/equixss/todo-web/internal/feature/statistics/transport/http"
 	tasks_postgres_repository "github.com/equixss/todo-web/internal/feature/tasks/repository/postgres"
 	tasks_service "github.com/equixss/todo-web/internal/feature/tasks/service"
 	tasks_transport_http "github.com/equixss/todo-web/internal/feature/tasks/transport/http"
@@ -21,12 +25,9 @@ import (
 	"go.uber.org/zap"
 )
 
-var (
-	timeZone = time.UTC
-)
-
 func main() {
-	time.Local = timeZone
+	config := core_config.NewConfigMust()
+	time.Local = config.TimeZone
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 
@@ -37,7 +38,7 @@ func main() {
 	}
 	defer logger.Close()
 
-	logger.Debug("application timeZone", zap.Any("timeZone", timeZone))
+	logger.Debug("application timeZone", zap.Any("timeZone", time.Local))
 	logger.Debug("initializing postgres connection pool...")
 	pool, err := core_pgx_pool.NewPool(ctx, core_pgx_pool.NewConfigMust())
 	if err != nil {
@@ -55,6 +56,11 @@ func main() {
 	tasksService := tasks_service.NewTasksService(tasksRepository)
 	tasksTransportHTTP := tasks_transport_http.NewTasksHttpHandler(tasksService)
 
+	logger.Debug("initializing feature", zap.String("feature", "statistics"))
+	statisticsRepository := statistics_repository.NewStatisticsRepository(pool)
+	statisticsService := statistics_service.NewStatisticsService(statisticsRepository)
+	statisticsTransportHTTP := statistics_transport_http.NewStatisticsHTTPHandler(statisticsService)
+
 	logger.Debug("initializing HTTP server")
 	httpServer := core_http_server.NewHTTPServer(
 		core_http_server.NewConfigMust(),
@@ -67,6 +73,7 @@ func main() {
 	apiVersionRouter := core_http_server.NewAPIVersionRouter(core_http_server.APIVersion1)
 	apiVersionRouter.RegisterRoutes(usersTransportHTTP.Routes()...)
 	apiVersionRouter.RegisterRoutes(tasksTransportHTTP.Routes()...)
+	apiVersionRouter.RegisterRoutes(statisticsTransportHTTP.Routes()...)
 	httpServer.RegisterAPIRouters(apiVersionRouter)
 
 	if err := httpServer.Run(ctx); err != nil {
