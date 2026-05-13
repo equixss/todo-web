@@ -8,6 +8,7 @@ import (
 	"syscall"
 	"time"
 
+	core_auth "github.com/equixss/todo-web/internal/core/auth"
 	core_config "github.com/equixss/todo-web/internal/core/config"
 	core_logger "github.com/equixss/todo-web/internal/core/logger"
 	"github.com/equixss/todo-web/internal/core/repository/postgres/pool/pgx"
@@ -46,20 +47,25 @@ func main() {
 	}
 	defer pool.Close()
 
+	logger.Debug("initializing JWT config...")
+	jwtConfig := core_auth.NewConfigMust()
+	jwtMiddleware := core_http_middleware.NewJWTMiddleware(jwtConfig)
+	authConfigAdapter := users_service.NewAuthConfigAdapter(jwtConfig)
+
 	logger.Debug("initializing feature", zap.String("feature", "users"))
 	usersRepository := users_postgres_repository.NewUsersRepository(pool)
-	usersService := users_service.NewUsersService(usersRepository)
-	usersTransportHTTP := users_transport_http.NewUsersHttpHandler(usersService)
+	usersService := users_service.NewUsersService(usersRepository, authConfigAdapter)
+	usersTransportHTTP := users_transport_http.NewUsersHttpHandler(usersService, jwtMiddleware)
 
 	logger.Debug("initializing feature", zap.String("feature", "tasks"))
 	tasksRepository := tasks_postgres_repository.NewTasksRepository(pool)
 	tasksService := tasks_service.NewTasksService(tasksRepository)
-	tasksTransportHTTP := tasks_transport_http.NewTasksHttpHandler(tasksService)
+	tasksTransportHTTP := tasks_transport_http.NewTasksHttpHandler(tasksService, jwtMiddleware)
 
 	logger.Debug("initializing feature", zap.String("feature", "statistics"))
 	statisticsRepository := statistics_repository.NewStatisticsRepository(pool)
 	statisticsService := statistics_service.NewStatisticsService(statisticsRepository)
-	statisticsTransportHTTP := statistics_transport_http.NewStatisticsHTTPHandler(statisticsService)
+	statisticsTransportHTTP := statistics_transport_http.NewStatisticsHTTPHandler(statisticsService, jwtMiddleware)
 
 	logger.Debug("initializing HTTP server")
 	httpServer := core_http_server.NewHTTPServer(
@@ -71,7 +77,8 @@ func main() {
 		core_http_middleware.Panic(),
 	)
 	apiVersionRouter := core_http_server.NewAPIVersionRouter(core_http_server.APIVersion1)
-	apiVersionRouter.RegisterRoutes(usersTransportHTTP.Routes()...)
+	apiVersionRouter.RegisterRoutes(usersTransportHTTP.PublicRoutes()...)
+	apiVersionRouter.RegisterRoutes(usersTransportHTTP.ProtectedRoutes()...)
 	apiVersionRouter.RegisterRoutes(tasksTransportHTTP.Routes()...)
 	apiVersionRouter.RegisterRoutes(statisticsTransportHTTP.Routes()...)
 	httpServer.RegisterAPIRouters(apiVersionRouter)

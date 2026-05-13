@@ -1,10 +1,13 @@
 package tasks_transport_http
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
 	"github.com/equixss/todo-web/internal/core/domain"
+	core_errors "github.com/equixss/todo-web/internal/core/errors"
+	core_http_middleware "github.com/equixss/todo-web/internal/core/transport/http/middleware"
 	core_logger "github.com/equixss/todo-web/internal/core/logger"
 	core_http_request "github.com/equixss/todo-web/internal/core/transport/http/request"
 	core_http_response "github.com/equixss/todo-web/internal/core/transport/http/response"
@@ -50,6 +53,12 @@ func (h *TasksHTTPHandler) PatchTask(rw http.ResponseWriter, r *http.Request) {
 	log := core_logger.FromContext(ctx)
 	responseHandler := core_http_response.NewHTTPResponseHandler(log, rw)
 
+	userID, ok := core_http_middleware.GetUserIDFromContext(ctx)
+	if !ok {
+		responseHandler.ErrorResponse(ErrUnauthorized, "authentication required")
+		return
+	}
+
 	taskID, err := core_http_request.GetIntPathValue(r, "id")
 	if err != nil {
 		responseHandler.ErrorResponse(err, "failed to get ID path param")
@@ -62,8 +71,12 @@ func (h *TasksHTTPHandler) PatchTask(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 	taskPatch := taskPatchFromRequest(request)
-	taskDomain, err := h.tasksService.PatchTask(ctx, taskID, taskPatch)
+	taskDomain, err := h.tasksService.PatchTask(ctx, taskID, taskPatch, userID)
 	if err != nil {
+		if errors.Is(err, core_errors.ErrNotFound) {
+			responseHandler.ErrorResponse(err, "task not found")
+			return
+		}
 		responseHandler.ErrorResponse(err, "failed to patch task")
 		return
 	}

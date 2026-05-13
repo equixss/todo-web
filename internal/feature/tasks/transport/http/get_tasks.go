@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	core_http_middleware "github.com/equixss/todo-web/internal/core/transport/http/middleware"
 	core_logger "github.com/equixss/todo-web/internal/core/logger"
 	core_http_utils "github.com/equixss/todo-web/internal/core/transport/http/request"
 	core_http_response "github.com/equixss/todo-web/internal/core/transport/http/response"
@@ -16,7 +17,13 @@ func (h *TasksHTTPHandler) GetTasks(rw http.ResponseWriter, r *http.Request) {
 	log := core_logger.FromContext(ctx)
 	responseHandler := core_http_response.NewHTTPResponseHandler(log, rw)
 
-	limit, offset, userID, err := getTasksQueryParams(r)
+	userID, ok := core_http_middleware.GetUserIDFromContext(ctx)
+	if !ok {
+		responseHandler.ErrorResponse(ErrUnauthorized, "authentication required")
+		return
+	}
+
+	limit, offset, err := getTasksQueryParams(r)
 	if err != nil {
 		responseHandler.ErrorResponse(
 			err,
@@ -24,6 +31,7 @@ func (h *TasksHTTPHandler) GetTasks(rw http.ResponseWriter, r *http.Request) {
 		)
 		return
 	}
+
 	tasksDomain, err := h.tasksService.GetTasks(
 		ctx,
 		limit,
@@ -42,18 +50,14 @@ func (h *TasksHTTPHandler) GetTasks(rw http.ResponseWriter, r *http.Request) {
 	responseHandler.JSONResponse(response, http.StatusOK)
 }
 
-func getTasksQueryParams(r *http.Request) (*int, *int, *int, error) {
+func getTasksQueryParams(r *http.Request) (*int, *int, error) {
 	limit, err := core_http_utils.GetIntQueryParam(r, "limit")
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf(`parameter "limit": %w`, err)
+		return nil, nil, fmt.Errorf(`parameter "limit": %w`, err)
 	}
 	offset, err := core_http_utils.GetIntQueryParam(r, "offset")
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf(`parameter "offset": %w`, err)
+		return nil, nil, fmt.Errorf(`parameter "offset": %w`, err)
 	}
-	userID, err := core_http_utils.GetIntQueryParam(r, "user_id")
-	if err != nil {
-		return nil, nil, nil, fmt.Errorf(`parameter "user_id": %w`, err)
-	}
-	return limit, offset, userID, nil
+	return limit, offset, nil
 }

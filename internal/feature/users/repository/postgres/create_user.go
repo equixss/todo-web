@@ -15,11 +15,11 @@ func (r *UsersRepository) CreateUser(
 	defer cancel()
 
 	query := `
-		INSERT INTO todoapp.users (name, phone)
-		VALUES ($1,$2)
-		RETURNING id, version, name, phone;
+		INSERT INTO todoapp.users (name, phone, email, password_hash)
+		VALUES ($1,$2,$3,$4)
+		RETURNING id, version, name, phone, email, password_hash;
 		`
-	row := r.pool.QueryRow(ctx, query, user.Name, user.Phone)
+	row := r.pool.QueryRow(ctx, query, user.Name, user.Phone, user.Email, user.PasswordHash)
 
 	var model UserModel
 
@@ -28,6 +28,8 @@ func (r *UsersRepository) CreateUser(
 		&model.Version,
 		&model.Name,
 		&model.Phone,
+		&model.Email,
+		&model.PasswordHash,
 	)
 	if err != nil {
 		return domain.User{}, fmt.Errorf("create user: %w", err)
@@ -38,5 +40,7 @@ func (r *UsersRepository) CreateUser(
 		model.Version,
 		model.Name,
 		model.Phone,
+		model.Email,
+		model.PasswordHash,
 	), nil
 }

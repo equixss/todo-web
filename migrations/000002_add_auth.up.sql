@@ -1,0 +1,3 @@
+ALTER TABLE todoapp.users ADD COLUMN email VARCHAR(255) UNIQUE;
+ALTER TABLE todoapp.users ADD COLUMN password_hash VARCHAR(255) NOT NULL DEFAULT '';
+ALTER TABLE todoapp.users ALTER COLUMN password_hash DROP DEFAULT;

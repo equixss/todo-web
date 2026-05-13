@@ -50,6 +50,12 @@ func (h *HTTPResponseHandler) ErrorResponse(err error, msg string) {
 	case errors.Is(err, core_errors.ErrConflict):
 		statusCode = http.StatusConflict
 		logFunc = h.log.Warn
+	case errors.Is(err, core_errors.ErrUnauthorized):
+		statusCode = http.StatusUnauthorized
+		logFunc = h.log.Warn
+	case errors.Is(err, core_errors.ErrInvalidPassword):
+		statusCode = http.StatusUnauthorized
+		logFunc = h.log.Warn
 	default:
 		statusCode = http.StatusInternalServerError
 		logFunc = h.log.Error

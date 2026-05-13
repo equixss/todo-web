@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/equixss/todo-web/internal/core/domain"
+	core_http_middleware "github.com/equixss/todo-web/internal/core/transport/http/middleware"
 	core_http_server "github.com/equixss/todo-web/internal/core/transport/http/server"
 )
 
@@ -16,58 +17,67 @@ type TasksService interface {
 	GetTask(
 		ctx context.Context,
 		id int,
+		userID int,
 	) (domain.Task, error)
 	PatchTask(
 		ctx context.Context,
 		id int,
 		patch domain.TaskPatch,
+		userID int,
 	) (domain.Task, error)
 	DeleteTask(
 		ctx context.Context,
 		id int,
+		userID int,
 	) error
 	GetTasks(
 		ctx context.Context,
 		limit *int,
 		offset *int,
-		userID *int,
+		userID int,
 	) ([]domain.Task, error)
 }
 
 type TasksHTTPHandler struct {
 	tasksService TasksService
+	jwtMW        *core_http_middleware.JWTMiddleware
 }
 
-func NewTasksHttpHandler(tasksService TasksService) *TasksHTTPHandler {
-	return &TasksHTTPHandler{tasksService: tasksService}
+func NewTasksHttpHandler(tasksService TasksService, jwtMW *core_http_middleware.JWTMiddleware) *TasksHTTPHandler {
+	return &TasksHTTPHandler{tasksService: tasksService, jwtMW: jwtMW}
 }
 
 func (h *TasksHTTPHandler) Routes() []core_http_server.Route {
 	return []core_http_server.Route{
 		{
-			Method:  http.MethodPost,
-			Path:    "/tasks",
-			Handler: h.CreateTask,
+			Method:     http.MethodPost,
+			Path:       "/tasks",
+			Handler:    h.CreateTask,
+			Middleware: []core_http_middleware.Middleware{h.jwtMW.Authenticate()},
 		},
 		{
-			Method:  http.MethodGet,
-			Path:    "/tasks",
-			Handler: h.GetTasks,
+			Method:     http.MethodGet,
+			Path:       "/tasks",
+			Handler:    h.GetTasks,
+			Middleware: []core_http_middleware.Middleware{h.jwtMW.Authenticate()},
 		},
 		{
-			Method:  http.MethodGet,
-			Path:    "/tasks/{id}",
-			Handler: h.GetTask,
+			Method:     http.MethodGet,
+			Path:       "/tasks/{id}",
+			Handler:    h.GetTask,
+			Middleware: []core_http_middleware.Middleware{h.jwtMW.Authenticate()},
 		},
 		{
-			Method:  http.MethodDelete,
-			Path:    "/tasks/{id}",
-			Handler: h.DeleteTask,
+			Method:     http.MethodDelete,
+			Path:       "/tasks/{id}",
+			Handler:    h.DeleteTask,
+			Middleware: []core_http_middleware.Middleware{h.jwtMW.Authenticate()},
 		},
 		{
-			Method:  http.MethodPatch,
-			Path:    "/tasks/{id}",
-			Handler: h.PatchTask,
+			Method:     http.MethodPatch,
+			Path:       "/tasks/{id}",
+			Handler:    h.PatchTask,
+			Middleware: []core_http_middleware.Middleware{h.jwtMW.Authenticate()},
 		},
 	}
 }

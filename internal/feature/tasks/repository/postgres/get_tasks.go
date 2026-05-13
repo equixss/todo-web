@@ -14,7 +14,7 @@ func (r *TasksRepository) GetTasks(
 	ctx context.Context,
 	limit *int,
 	offset *int,
-	userID *int,
+	userID int,
 ) ([]domain.Task, error) {
 	ctx, cancel := context.WithTimeout(ctx, r.pool.OpTimeout())
 	defer cancel()
@@ -26,12 +26,11 @@ func (r *TasksRepository) GetTasks(
     `
 
 	var where []string
-	var args []interface{}
+	var args []any
 
-	if userID != nil {
-		where = append(where, fmt.Sprintf("user_id = %s", ph(len(args)+1)))
-		args = append(args, *userID)
-	}
+	where = append(where, fmt.Sprintf("user_id = %s", ph(len(args)+1)))
+	args = append(args, userID)
+
 	limitPl := ph(len(args) + 1)
 	offsetPl := ph(len(args) + 2)
 	args = append(args, limit, offset)

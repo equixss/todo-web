@@ -7,6 +7,7 @@ import (
 	"github.com/equixss/todo-web/internal/core/domain"
 	core_errors "github.com/equixss/todo-web/internal/core/errors"
 	core_logger "github.com/equixss/todo-web/internal/core/logger"
+	core_http_middleware "github.com/equixss/todo-web/internal/core/transport/http/middleware"
 	core_http_request "github.com/equixss/todo-web/internal/core/transport/http/request"
 	core_http_response "github.com/equixss/todo-web/internal/core/transport/http/response"
 	core_http_types "github.com/equixss/todo-web/internal/core/transport/http/types"
@@ -15,6 +16,7 @@ import (
 type PatchUserRequest struct {
 	Name  core_http_types.Nullable[string] `json:"name"`
 	Phone core_http_types.Nullable[string] `json:"phone"`
+	Email core_http_types.Nullable[string] `json:"email"`
 }
 
 func (r *PatchUserRequest) Validate() error {
@@ -27,12 +29,10 @@ func (r *PatchUserRequest) Validate() error {
 			return fmt.Errorf("'Name' must be between 3 and 100 symbols")
 		}
 	}
-	if r.Phone.Set {
-		if r.Phone.Value == nil {
-			phoneLen := len([]rune(*r.Phone.Value))
-			if phoneLen < 10 || !domain.RussianPhoneRE.MatchString(*r.Phone.Value) {
-				return fmt.Errorf("invalid phone number: %s: %w", *r.Phone.Value, core_errors.ErrInvalidArgument)
-			}
+	if r.Phone.Set && r.Phone.Value != nil {
+		phoneLen := len([]rune(*r.Phone.Value))
+		if phoneLen < 10 || !domain.RussianPhoneRE.MatchString(*r.Phone.Value) {
+			return fmt.Errorf("invalid phone number: %s: %w", *r.Phone.Value, core_errors.ErrInvalidArgument)
 		}
 	}
 	return nil
@@ -47,9 +47,20 @@ func (h *UsersHTTPHandler) PatchUser(rw http.ResponseWriter, r *http.Request) {
 
 	log.Debug("invoke PatchUser handler")
 
-	userID, err := core_http_request.GetIntPathValue(r, "id")
+	requestedUserID, err := core_http_request.GetIntPathValue(r, "id")
 	if err != nil {
 		responseHandler.ErrorResponse(err, "failed to get ID path param")
+		return
+	}
+
+	authenticatedUserID, ok := core_http_middleware.GetUserIDFromContext(ctx)
+	if !ok {
+		responseHandler.ErrorResponse(fmt.Errorf("user not authenticated"), "authentication required")
+		return
+	}
+
+	if authenticatedUserID != requestedUserID {
+		responseHandler.ErrorResponse(fmt.Errorf("access denied"), "access denied")
 		return
 	}
 
@@ -60,7 +71,7 @@ func (h *UsersHTTPHandler) PatchUser(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	userPatch := userPatchFromRequest(request)
-	userDomain, err := h.usersService.PatchUser(ctx, userID, userPatch)
+	userDomain, err := h.usersService.PatchUser(ctx, requestedUserID, userPatch)
 	if err != nil {
 		responseHandler.ErrorResponse(err, "failed to patch user")
 		return
@@ -74,5 +85,6 @@ func userPatchFromRequest(request PatchUserRequest) domain.UserPatch {
 	return domain.NewUserPatch(
 		request.Name.ToDomain(),
 		request.Phone.ToDomain(),
+		request.Email.ToDomain(),
 	)
 }

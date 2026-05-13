@@ -7,11 +7,14 @@ import (
 	core_logger "github.com/equixss/todo-web/internal/core/logger"
 	core_http_request "github.com/equixss/todo-web/internal/core/transport/http/request"
 	core_http_response "github.com/equixss/todo-web/internal/core/transport/http/response"
+	users_service "github.com/equixss/todo-web/internal/feature/users/service"
 )
 
 type CreateUserRequest struct {
-	Name  string  `json:"name"  validate:"required,min=3,max=100"`
-	Phone *string `json:"phone" validate:"omitempty,min=10,max=15"`
+	Name     string  `json:"name" validate:"required,min=3,max=100"`
+	Phone    *string `json:"phone" validate:"omitempty,min=10,max=15"`
+	Email    *string `json:"email" validate:"omitempty,email"`
+	Password string  `json:"password" validate:"required,min=6"`
 }
 
 type CreateUserResponse UserDTOResponse
@@ -30,7 +33,13 @@ func (h *UsersHTTPHandler) CreateUser(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userDomain, err := h.usersService.CreateUser(ctx, domainFromDTO(request))
+	passwordHash, err := users_service.HashPassword(request.Password)
+	if err != nil {
+		responseHandler.ErrorResponse(err, "failed to hash password")
+		return
+	}
+
+	userDomain, err := h.usersService.CreateUser(ctx, domainFromDTO(request, passwordHash))
 
 	if err != nil {
 		responseHandler.ErrorResponse(err, "failed to create user")
@@ -42,6 +51,6 @@ func (h *UsersHTTPHandler) CreateUser(rw http.ResponseWriter, r *http.Request) {
 	responseHandler.JSONResponse(response, http.StatusCreated)
 }
 
-func domainFromDTO(dto CreateUserRequest) domain.User {
-	return domain.NewUserUninitialized(dto.Name, dto.Phone)
+func domainFromDTO(dto CreateUserRequest, passwordHash string) domain.User {
+	return domain.NewUserUninitialized(dto.Name, dto.Phone, dto.Email, passwordHash)
 }

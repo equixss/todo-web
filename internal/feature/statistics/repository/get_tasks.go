@@ -13,7 +13,7 @@ func ph(idx int) string { return fmt.Sprintf("$%d", idx) }
 
 func (r *StatisticsRepository) GetTasks(
 	ctx context.Context,
-	userID *int,
+	userID int,
 	from *time.Time,
 	to *time.Time,
 ) ([]domain.Task, error) {
@@ -26,10 +26,10 @@ func (r *StatisticsRepository) GetTasks(
 `
 	var where []string
 	var args []interface{}
-	if userID != nil {
-		where = append(where, fmt.Sprintf("user_id = %s", ph(len(args)+1)))
-		args = append(args, *userID)
-	}
+
+	where = append(where, fmt.Sprintf("user_id = %s", ph(len(args)+1)))
+	args = append(args, userID)
+
 	if from != nil {
 		where = append(where, fmt.Sprintf("created_at >= %s", ph(len(args)+1)))
 		args = append(args, *from)

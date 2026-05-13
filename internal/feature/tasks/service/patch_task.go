@@ -5,23 +5,36 @@ import (
 	"fmt"
 
 	"github.com/equixss/todo-web/internal/core/domain"
+	core_errors "github.com/equixss/todo-web/internal/core/errors"
 )
 
 func (s *TasksService) PatchTask(
 	ctx context.Context,
 	id int,
 	patch domain.TaskPatch,
+	userID int,
 ) (domain.Task, error) {
+	if id <= 0 {
+		return domain.Task{}, fmt.Errorf("invalid task id: %w", core_errors.ErrInvalidArgument)
+	}
+
 	task, err := s.tasksRepository.GetTask(ctx, id)
 	if err != nil {
-		return domain.Task{}, fmt.Errorf("task %d not found:%w", id, err)
+		return domain.Task{}, fmt.Errorf("get task: %w", err)
 	}
+
+	if task.AuthorUserID != userID {
+		return domain.Task{}, fmt.Errorf("access denied: %w", core_errors.ErrNotFound)
+	}
+
 	if err := task.ApplyPatch(patch); err != nil {
-		return domain.Task{}, fmt.Errorf("patch task %d failed:%w", id, err)
+		return domain.Task{}, fmt.Errorf("apply patch: %w", err)
 	}
+
 	patchedTask, err := s.tasksRepository.PatchTask(ctx, id, task)
 	if err != nil {
-		return domain.Task{}, fmt.Errorf("patch task %d failed:%w", id, err)
+		return domain.Task{}, fmt.Errorf("update task: %w", err)
 	}
+
 	return patchedTask, nil
 }

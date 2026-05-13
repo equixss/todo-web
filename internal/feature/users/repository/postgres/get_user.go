@@ -15,7 +15,7 @@ func (r *UsersRepository) GetUser(ctx context.Context, id int) (domain.User, err
 	defer cancel()
 
 	query := `
-	SELECT id, version, name, phone
+	SELECT id, version, name, phone, email, COALESCE(password_hash, '') as password_hash
 	FROM todoapp.users
 	WHERE id = $1;
 `
@@ -28,6 +28,8 @@ func (r *UsersRepository) GetUser(ctx context.Context, id int) (domain.User, err
 		&userModel.Version,
 		&userModel.Name,
 		&userModel.Phone,
+		&userModel.Email,
+		&userModel.PasswordHash,
 	)
 
 	if err != nil {
@@ -41,11 +43,12 @@ func (r *UsersRepository) GetUser(ctx context.Context, id int) (domain.User, err
 		return domain.User{}, fmt.Errorf("scan error: %w", err)
 	}
 
-	return domain.User{
-		ID:      userModel.ID,
-		Version: userModel.Version,
-		Name:    userModel.Name,
-		Phone:   userModel.Phone,
-	}, nil
-
+	return domain.NewUser(
+		userModel.ID,
+		userModel.Version,
+		userModel.Name,
+		userModel.Phone,
+		userModel.Email,
+		userModel.PasswordHash,
+	), nil
 }
