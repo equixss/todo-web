@@ -16,7 +16,7 @@ func (r *UsersRepository) GetUsers(
 	defer cancel()
 
 	query := `
-	SELECT id, version, name, phone
+	SELECT id, version, name, phone, email, COALESCE(password_hash, '') as password_hash
 	FROM todoapp.users
 	ORDER BY id ASC 
 	LIMIT $1
@@ -36,6 +36,8 @@ func (r *UsersRepository) GetUsers(
 			&model.Version,
 			&model.Name,
 			&model.Phone,
+			&model.Email,
+			&model.PasswordHash,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("scan users error: %w", err)

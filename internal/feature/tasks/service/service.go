@@ -28,7 +28,7 @@ type TasksRepository interface {
 		ctx context.Context,
 		limit *int,
 		offset *int,
-		userID *int,
+		userID int,
 	) ([]domain.Task, error)
 }
 

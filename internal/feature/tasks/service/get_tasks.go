@@ -12,7 +12,7 @@ func (s *TasksService) GetTasks(
 	ctx context.Context,
 	limit *int,
 	offset *int,
-	userID *int,
+	userID int,
 ) ([]domain.Task, error) {
 	if limit != nil && *limit < 0 {
 		return nil, fmt.Errorf(

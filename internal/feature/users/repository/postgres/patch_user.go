@@ -20,12 +20,12 @@ func (r *UsersRepository) PatchUser(
 
 	query := `
 		UPDATE todoapp.users
-		SET name = $1, phone = $2, version = version+1
-		WHERE id = $3 AND version = $4
-		RETURNING id, version, name, phone;
+		SET name = $1, phone = $2, email = $3, version = version+1
+		WHERE id = $4 AND version = $5
+		RETURNING id, version, name, phone, email, COALESCE(password_hash, '') as password_hash;
 	`
 
-	row := r.pool.QueryRow(ctx, query, user.Name, user.Phone, id, user.Version)
+	row := r.pool.QueryRow(ctx, query, user.Name, user.Phone, user.Email, id, user.Version)
 
 	var model UserModel
 	err := row.Scan(
@@ -33,6 +33,8 @@ func (r *UsersRepository) PatchUser(
 		&model.Version,
 		&model.Name,
 		&model.Phone,
+		&model.Email,
+		&model.PasswordHash,
 	)
 	if err != nil {
 		if errors.Is(err, core_postgres_pool.ErrNoRows) {
@@ -44,11 +46,12 @@ func (r *UsersRepository) PatchUser(
 		}
 		return domain.User{}, fmt.Errorf("scan error: %w", err)
 	}
-	userDomain := domain.User{
-		ID:      model.ID,
-		Version: model.Version,
-		Name:    model.Name,
-		Phone:   model.Phone,
-	}
-	return userDomain, nil
+	return domain.NewUser(
+		model.ID,
+		model.Version,
+		model.Name,
+		model.Phone,
+		model.Email,
+		model.PasswordHash,
+	), nil
 }

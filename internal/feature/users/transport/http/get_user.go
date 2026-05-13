@@ -1,8 +1,10 @@
 package users_transport_http
 
 import (
+	"fmt"
 	"net/http"
 
+	core_http_middleware "github.com/equixss/todo-web/internal/core/transport/http/middleware"
 	core_logger "github.com/equixss/todo-web/internal/core/logger"
 	core_http_utils "github.com/equixss/todo-web/internal/core/transport/http/request"
 	core_http_response "github.com/equixss/todo-web/internal/core/transport/http/response"
@@ -15,12 +17,24 @@ func (h *UsersHTTPHandler) GetUser(rw http.ResponseWriter, r *http.Request) {
 	logger := core_logger.FromContext(ctx)
 	responseHandler := core_http_response.NewHTTPResponseHandler(logger, rw)
 
-	userID, err := core_http_utils.GetIntPathValue(r, "id")
+	requestedUserID, err := core_http_utils.GetIntPathValue(r, "id")
 	if err != nil {
 		responseHandler.ErrorResponse(err, "failed to get ID path param")
 		return
 	}
-	userDomain, err := h.usersService.GetUser(ctx, userID)
+
+	authenticatedUserID, ok := core_http_middleware.GetUserIDFromContext(ctx)
+	if !ok {
+		responseHandler.ErrorResponse(fmt.Errorf("user not authenticated"), "authentication required")
+		return
+	}
+
+	if authenticatedUserID != requestedUserID {
+		responseHandler.ErrorResponse(fmt.Errorf("access denied"), "access denied")
+		return
+	}
+
+	userDomain, err := h.usersService.GetUser(ctx, requestedUserID)
 	if err != nil {
 		responseHandler.ErrorResponse(err, "failed to get user")
 		return

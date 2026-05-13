@@ -5,11 +5,13 @@ import (
 	"net/http"
 
 	"github.com/equixss/todo-web/internal/core/domain"
+	core_http_middleware "github.com/equixss/todo-web/internal/core/transport/http/middleware"
 	core_http_server "github.com/equixss/todo-web/internal/core/transport/http/server"
 )
 
 type UsersHTTPHandler struct {
 	usersService UsersService
+	jwtMW       *core_http_middleware.JWTMiddleware
 }
 type UsersService interface {
 	CreateUser(
@@ -34,39 +36,77 @@ type UsersService interface {
 		ctx context.Context,
 		id int,
 	) error
+	Login(
+		ctx context.Context,
+		credentials domain.LoginCredentials,
+	) (domain.LoginResult, error)
+	RefreshToken(
+		ctx context.Context,
+		refreshToken string,
+	) (domain.RefreshTokenResult, error)
 }
 
-func NewUsersHttpHandler(usersService UsersService) *UsersHTTPHandler {
-	return &UsersHTTPHandler{usersService: usersService}
+func NewUsersHttpHandler(usersService UsersService, jwtMW *core_http_middleware.JWTMiddleware) *UsersHTTPHandler {
+	return &UsersHTTPHandler{usersService: usersService, jwtMW: jwtMW}
 }
 
-func (h *UsersHTTPHandler) Routes() []core_http_server.Route {
+func (h *UsersHTTPHandler) PublicRoutes() []core_http_server.Route {
 	return []core_http_server.Route{
+		{
+			Method:  http.MethodPost,
+			Path:    "/users/login",
+			Handler: h.Login,
+		},
+		{
+			Method:  http.MethodPost,
+			Path:    "/users/refresh",
+			Handler: h.RefreshToken,
+		},
 		{
 			Method:  http.MethodPost,
 			Path:    "/users",
 			Handler: h.CreateUser,
 		},
+	}
+}
+
+func (h *UsersHTTPHandler) ProtectedRoutes() []core_http_server.Route {
+	return []core_http_server.Route{
 		{
-			Method:  http.MethodGet,
-			Path:    "/users",
-			Handler: h.GetUsers,
+			Method:     http.MethodGet,
+			Path:       "/users/me",
+			Handler:    h.GetCurrentUser,
+			Middleware: []core_http_middleware.Middleware{h.jwtMW.Authenticate()},
 		},
 		{
-			Method:  http.MethodGet,
-			Path:    "/users/{id}",
-			Handler: h.GetUser,
+			Method:     http.MethodPost,
+			Path:       "/users/logout",
+			Handler:    h.Logout,
+			Middleware: []core_http_middleware.Middleware{h.jwtMW.Authenticate()},
 		},
 		{
-			Method:  http.MethodDelete,
-			Path:    "/users/{id}",
-			Handler: h.DeleteUser,
+			Method:     http.MethodGet,
+			Path:       "/users",
+			Handler:    h.GetUsers,
+			Middleware: []core_http_middleware.Middleware{h.jwtMW.Authenticate()},
 		},
 		{
-			Method:  http.MethodPatch,
-			Path:    "/users/{id}",
-			Handler: h.PatchUser,
+			Method:     http.MethodGet,
+			Path:       "/users/{id}",
+			Handler:    h.GetUser,
+			Middleware: []core_http_middleware.Middleware{h.jwtMW.Authenticate()},
+		},
+		{
+			Method:     http.MethodDelete,
+			Path:       "/users/{id}",
+			Handler:    h.DeleteUser,
+			Middleware: []core_http_middleware.Middleware{h.jwtMW.Authenticate()},
+		},
+		{
+			Method:     http.MethodPatch,
+			Path:       "/users/{id}",
+			Handler:    h.PatchUser,
+			Middleware: []core_http_middleware.Middleware{h.jwtMW.Authenticate()},
 		},
 	}
-
 }

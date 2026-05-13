@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/equixss/todo-web/internal/core/domain"
+	core_errors "github.com/equixss/todo-web/internal/core/errors"
+	core_http_middleware "github.com/equixss/todo-web/internal/core/transport/http/middleware"
 	core_logger "github.com/equixss/todo-web/internal/core/logger"
 	core_http_request "github.com/equixss/todo-web/internal/core/transport/http/request"
 	core_http_response "github.com/equixss/todo-web/internal/core/transport/http/response"
@@ -23,6 +25,12 @@ func (h *StatisticsHTTPHandler) GetStatistics(rw http.ResponseWriter, r *http.Re
 	log := core_logger.FromContext(ctx)
 	responseHandler := core_http_response.NewHTTPResponseHandler(log, rw)
 
+	userID, ok := core_http_middleware.GetUserIDFromContext(ctx)
+	if !ok {
+		responseHandler.ErrorResponse(ErrUnauthorized, "authentication required")
+		return
+	}
+
 	queryParams, err := getQueryParameters(r)
 	if err != nil {
 		responseHandler.ErrorResponse(err, "failed to get query params")
@@ -30,7 +38,7 @@ func (h *StatisticsHTTPHandler) GetStatistics(rw http.ResponseWriter, r *http.Re
 	}
 	statistics, err := h.statisticsService.GetStatistics(
 		ctx,
-		queryParams.UserID,
+		userID,
 		queryParams.From,
 		queryParams.To,
 	)
@@ -56,21 +64,15 @@ func domainStatisticsToDTO(statistics domain.Statistics) GetStatisticsResponse {
 }
 
 type queryParams struct {
-	UserID *int
-	From   *time.Time
-	To     *time.Time
+	From *time.Time
+	To   *time.Time
 }
 
 func getQueryParameters(r *http.Request) (*queryParams, error) {
 	const (
-		userIDQueryParamKey = "user_id"
-		fromQueryParamKey   = "from"
-		toQueryParamKey     = "to"
+		fromQueryParamKey = "from"
+		toQueryParamKey   = "to"
 	)
-	userID, err := core_http_request.GetIntQueryParam(r, userIDQueryParamKey)
-	if err != nil {
-		return nil, fmt.Errorf("get 'user_id' query param: %w", err)
-	}
 	from, err := core_http_request.GetDateQueryParam(r, fromQueryParamKey)
 	if err != nil {
 		return nil, fmt.Errorf("get 'from' query param: %w", err)
@@ -80,8 +82,9 @@ func getQueryParameters(r *http.Request) (*queryParams, error) {
 		return nil, fmt.Errorf("get 'to' query param: %w", err)
 	}
 	return &queryParams{
-		UserID: userID,
-		From:   from,
-		To:     to,
+		From: from,
+		To:   to,
 	}, nil
 }
+
+var ErrUnauthorized = core_errors.ErrUnauthorized

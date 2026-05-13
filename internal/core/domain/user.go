@@ -15,8 +15,10 @@ type User struct {
 	ID      int
 	Version int
 
-	Name  string
-	Phone *string
+	Name          string
+	Phone        *string
+	Email        *string
+	PasswordHash string
 }
 
 func NewUser(
@@ -24,8 +26,17 @@ func NewUser(
 	version int,
 	name string,
 	phone *string,
+	email *string,
+	passwordHash string,
 ) User {
-	return User{Name: name, Phone: phone, Version: version, ID: id}
+	return User{
+		ID:            id,
+		Version:       version,
+		Name:          name,
+		Phone:         phone,
+		Email:         email,
+		PasswordHash:  passwordHash,
+	}
 }
 
 func (u *User) Validate() error {
@@ -41,25 +52,36 @@ func (u *User) Validate() error {
 		}
 	}
 
+	if u.Email != nil && len(*u.Email) > 255 {
+		return fmt.Errorf("email too long: %w", core_errors.ErrInvalidArgument)
+	}
+
 	return nil
 }
 
-func NewUserUninitialized(name string, phone *string) User {
-	return NewUser(UninitializedID, UninitializedVersion, name, phone)
+func (u *User) HasCredentials() bool {
+	return u.PasswordHash != "" || u.Email != nil
+}
+
+func NewUserUninitialized(name string, phone *string, email *string, passwordHash string) User {
+	return NewUser(UninitializedID, UninitializedVersion, name, phone, email, passwordHash)
 }
 
 type UserPatch struct {
-	Name  Nullable[string]
-	Phone Nullable[string]
+	Name    Nullable[string]
+	Phone   Nullable[string]
+	Email   Nullable[string]
 }
 
 func NewUserPatch(
 	name Nullable[string],
 	phone Nullable[string],
+	email Nullable[string],
 ) UserPatch {
 	return UserPatch{
 		Name:  name,
 		Phone: phone,
+		Email: email,
 	}
 }
 
@@ -74,6 +96,9 @@ func (u *User) ApplyPatch(patch UserPatch) error {
 	}
 	if patch.Phone.Set {
 		tmp.Phone = patch.Phone.Value
+	}
+	if patch.Email.Set {
+		tmp.Email = patch.Email.Value
 	}
 
 	if err := tmp.Validate(); err != nil {

@@ -10,7 +10,7 @@ import (
 type StatisticsRepository interface {
 	GetTasks(
 		ctx context.Context,
-		userID *int,
+		userID int,
 		from *time.Time,
 		to *time.Time,
 	) ([]domain.Task, error)
@@ -24,4 +24,13 @@ func NewStatisticsService(repository StatisticsRepository) *StatisticsService {
 	return &StatisticsService{
 		repository,
 	}
+}
+
+type StatisticsServiceInterface interface {
+	GetStatistics(
+		ctx context.Context,
+		userID int,
+		from *time.Time,
+		to *time.Time,
+	) (domain.Statistics, error)
 }
