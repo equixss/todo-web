@@ -6,12 +6,14 @@ import (
 
 	"github.com/equixss/todo-web/internal/core/domain"
 	core_http_middleware "github.com/equixss/todo-web/internal/core/transport/http/middleware"
+	core_http_response_presenter "github.com/equixss/todo-web/internal/core/transport/http/response"
 	core_http_server "github.com/equixss/todo-web/internal/core/transport/http/server"
 )
 
 type UsersHTTPHandler struct {
+	presenter    *core_http_response_presenter.HTTPResponsePresenter
 	usersService UsersService
-	jwtMW       *core_http_middleware.JWTMiddleware
+	jwtMW        *core_http_middleware.JWTMiddleware
 }
 type UsersService interface {
 	CreateUser(
@@ -46,8 +48,12 @@ type UsersService interface {
 	) (domain.RefreshTokenResult, error)
 }
 
-func NewUsersHttpHandler(usersService UsersService, jwtMW *core_http_middleware.JWTMiddleware) *UsersHTTPHandler {
-	return &UsersHTTPHandler{usersService: usersService, jwtMW: jwtMW}
+func NewUsersHttpHandler(
+	usersService UsersService,
+	jwtMW *core_http_middleware.JWTMiddleware,
+	presenter *core_http_response_presenter.HTTPResponsePresenter,
+) *UsersHTTPHandler {
+	return &UsersHTTPHandler{usersService: usersService, jwtMW: jwtMW, presenter: presenter}
 }
 
 func (h *UsersHTTPHandler) PublicRoutes() []core_http_server.Route {

@@ -8,9 +8,8 @@ import (
 	"github.com/equixss/todo-web/internal/core/domain"
 	core_errors "github.com/equixss/todo-web/internal/core/errors"
 	core_http_middleware "github.com/equixss/todo-web/internal/core/transport/http/middleware"
-	core_logger "github.com/equixss/todo-web/internal/core/logger"
 	core_http_request "github.com/equixss/todo-web/internal/core/transport/http/request"
-	core_http_response "github.com/equixss/todo-web/internal/core/transport/http/response"
+	"github.com/gin-gonic/gin"
 )
 
 type GetStatisticsResponse struct {
@@ -20,33 +19,30 @@ type GetStatisticsResponse struct {
 	TasksAverageCompletedTime *string  `json:"tasks_average_completed_time"`
 }
 
-func (h *StatisticsHTTPHandler) GetStatistics(rw http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	log := core_logger.FromContext(ctx)
-	responseHandler := core_http_response.NewHTTPResponseHandler(log, rw)
+func (h *StatisticsHTTPHandler) GetStatistics(c *gin.Context) {
 
-	userID, ok := core_http_middleware.GetUserIDFromContext(ctx)
+	userID, ok := core_http_middleware.GetUserIDFromContext(c.Request.Context())
 	if !ok {
-		responseHandler.ErrorResponse(ErrUnauthorized, "authentication required")
+		h.presenter.ErrorResponse(c, core_errors.ErrUnauthorized, "authentication required")
 		return
 	}
 
-	queryParams, err := getQueryParameters(r)
+	queryParams, err := getQueryParameters(c.Request)
 	if err != nil {
-		responseHandler.ErrorResponse(err, "failed to get query params")
+		h.presenter.ErrorResponse(c, err, "failed to get query params")
 		return
 	}
 	statistics, err := h.statisticsService.GetStatistics(
-		ctx,
+		c.Request.Context(),
 		userID,
 		queryParams.From,
 		queryParams.To,
 	)
 	if err != nil {
-		responseHandler.ErrorResponse(err, "failed to get statistics")
+		h.presenter.ErrorResponse(c, err, "failed to get statistics")
 		return
 	}
-	responseHandler.JSONResponse(domainStatisticsToDTO(statistics), http.StatusOK)
+	h.presenter.JSONResponse(c, domainStatisticsToDTO(statistics), 200)
 }
 
 func domainStatisticsToDTO(statistics domain.Statistics) GetStatisticsResponse {
@@ -86,5 +82,3 @@ func getQueryParameters(r *http.Request) (*queryParams, error) {
 		To:   to,
 	}, nil
 }
-
-var ErrUnauthorized = core_errors.ErrUnauthorized

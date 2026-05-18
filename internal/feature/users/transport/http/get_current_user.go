@@ -6,34 +6,29 @@ import (
 	core_errors "github.com/equixss/todo-web/internal/core/errors"
 	core_logger "github.com/equixss/todo-web/internal/core/logger"
 	core_http_middleware "github.com/equixss/todo-web/internal/core/transport/http/middleware"
-	core_http_response "github.com/equixss/todo-web/internal/core/transport/http/response"
+	"github.com/gin-gonic/gin"
 )
 
-func (h *UsersHTTPHandler) GetCurrentUser(rw http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	log := core_logger.FromContext(ctx)
-	responseHandler := core_http_response.NewHTTPResponseHandler(log, rw)
-
+func (h *UsersHTTPHandler) GetCurrentUser(c *gin.Context) {
+	log := core_logger.FromContext(c)
 	log.Debug("invoke GetCurrentUser handler")
 
-	userID, ok := core_http_middleware.GetUserIDFromContext(ctx)
+	userID, ok := core_http_middleware.GetUserIDFromContext(c.Request.Context())
 	if !ok {
-		responseHandler.ErrorResponse(
-			ErrUnauthorized,
+		h.presenter.ErrorResponse(
+			c,
+			core_errors.ErrUnauthorized,
 			"failed to get current user",
 		)
 		return
 	}
 
-	user, err := h.usersService.GetUser(ctx, userID)
+	user, err := h.usersService.GetUser(c.Request.Context(), userID)
 	if err != nil {
-		responseHandler.ErrorResponse(err, "failed to get current user")
+		h.presenter.ErrorResponse(c, err, "failed to get current user")
 		return
 	}
 
 	response := UserDTOFromDomain(user)
-
-	responseHandler.JSONResponse(response, http.StatusOK)
+	h.presenter.JSONResponse(c, response, http.StatusOK)
 }
-
-var ErrUnauthorized = core_errors.ErrUnauthorized

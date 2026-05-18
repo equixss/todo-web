@@ -6,11 +6,10 @@ import (
 
 	"github.com/equixss/todo-web/internal/core/domain"
 	core_errors "github.com/equixss/todo-web/internal/core/errors"
-	core_logger "github.com/equixss/todo-web/internal/core/logger"
 	core_http_middleware "github.com/equixss/todo-web/internal/core/transport/http/middleware"
 	core_http_request "github.com/equixss/todo-web/internal/core/transport/http/request"
-	core_http_response "github.com/equixss/todo-web/internal/core/transport/http/response"
 	core_http_types "github.com/equixss/todo-web/internal/core/transport/http/types"
+	"github.com/gin-gonic/gin"
 )
 
 type PatchUserRequest struct {
@@ -40,45 +39,39 @@ func (r *PatchUserRequest) Validate() error {
 
 type PatchUserResponse UserDTOResponse
 
-func (h *UsersHTTPHandler) PatchUser(rw http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	log := core_logger.FromContext(ctx)
-	responseHandler := core_http_response.NewHTTPResponseHandler(log, rw)
-
-	log.Debug("invoke PatchUser handler")
-
-	requestedUserID, err := core_http_request.GetIntPathValue(r, "id")
+func (h *UsersHTTPHandler) PatchUser(c *gin.Context) {
+	requestedUserID, err := core_http_request.GetIntPathValue(c.Request, "id")
 	if err != nil {
-		responseHandler.ErrorResponse(err, "failed to get ID path param")
+		h.presenter.ErrorResponse(c, err, "failed to get ID path param")
 		return
 	}
 
-	authenticatedUserID, ok := core_http_middleware.GetUserIDFromContext(ctx)
+	authenticatedUserID, ok := core_http_middleware.GetUserIDFromContext(c.Request.Context())
 	if !ok {
-		responseHandler.ErrorResponse(fmt.Errorf("user not authenticated"), "authentication required")
+		h.presenter.ErrorResponse(c, core_errors.ErrUnauthorized, "authentication required")
 		return
 	}
 
 	if authenticatedUserID != requestedUserID {
-		responseHandler.ErrorResponse(fmt.Errorf("access denied"), "access denied")
+		h.presenter.ErrorResponse(c, fmt.Errorf("access denied"), "access denied")
 		return
 	}
 
 	var request PatchUserRequest
-	if err := core_http_request.DecodeAndValidateRequest(r, &request); err != nil {
-		responseHandler.ErrorResponse(err, "failed to decode and validate HTTP request")
+	if err := core_http_request.DecodeAndValidateRequest(c.Request, &request); err != nil {
+		h.presenter.ErrorResponse(c, err, "failed to decode and validate HTTP request")
 		return
 	}
 
 	userPatch := userPatchFromRequest(request)
-	userDomain, err := h.usersService.PatchUser(ctx, requestedUserID, userPatch)
+	userDomain, err := h.usersService.PatchUser(c.Request.Context(), requestedUserID, userPatch)
 	if err != nil {
-		responseHandler.ErrorResponse(err, "failed to patch user")
+		h.presenter.ErrorResponse(c, err, "failed to patch user")
 		return
 	}
 
 	response := PatchUserResponse(UserDTOFromDomain(userDomain))
-	responseHandler.JSONResponse(response, http.StatusOK)
+	h.presenter.JSONResponse(c, response, http.StatusOK)
 }
 
 func userPatchFromRequest(request PatchUserRequest) domain.UserPatch {

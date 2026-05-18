@@ -8,11 +8,12 @@ import (
 
 	core_logger "github.com/equixss/todo-web/internal/core/logger"
 	core_http_middleware "github.com/equixss/todo-web/internal/core/transport/http/middleware"
+	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
 
 type HTTPServer struct {
-	mux        *http.ServeMux
+	Engine     *gin.Engine
 	config     Config
 	log        *core_logger.Logger
 	middleware []core_http_middleware.Middleware
@@ -23,8 +24,15 @@ func NewHTTPServer(
 	log *core_logger.Logger,
 	middleware ...core_http_middleware.Middleware,
 ) *HTTPServer {
+	gin.SetMode(gin.ReleaseMode)
+	engine := gin.New()
+
+	if len(middleware) > 0 {
+		engine.Use(middleware...)
+	}
+
 	return &HTTPServer{
-		mux:        http.NewServeMux(),
+		Engine:     engine,
 		config:     config,
 		log:        log,
 		middleware: middleware,
@@ -33,28 +41,22 @@ func NewHTTPServer(
 
 func (s *HTTPServer) RegisterAPIRouters(routers ...*APIVersionRouter) {
 	for _, router := range routers {
-		prefix := "/api/" + string(router.apiVersion)
-		s.mux.Handle(
-			prefix+"/",
-			http.StripPrefix(prefix, router.WithMiddleware()),
-		)
+		if len(router.Middleware) > 0 {
+			for _, m := range router.Middleware {
+				router.RouterGroup.Use(m)
+			}
+		}
 	}
 }
 
 func (s *HTTPServer) Run(ctx context.Context) error {
-	mux := core_http_middleware.ChainMiddleware(s.mux, s.middleware...)
-	server := http.Server{
-		Addr:    s.config.Addr,
-		Handler: mux,
-	}
-
 	ch := make(chan error, 1)
 
 	go func() {
 		defer close(ch)
 		s.log.Warn("starting http server", zap.String("addr", s.config.Addr))
-		err := server.ListenAndServe()
-		if !errors.Is(err, http.ErrServerClosed) {
+		err := s.Engine.Run(s.config.Addr)
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
 			ch <- err
 		}
 	}()
@@ -66,15 +68,8 @@ func (s *HTTPServer) Run(ctx context.Context) error {
 		}
 	case <-ctx.Done():
 		s.log.Warn("shutting down http server...")
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), s.config.ShutDownTimeout)
-		defer cancel()
-
-		if err := server.Shutdown(shutdownCtx); err != nil {
-			_ = server.Close()
-			return fmt.Errorf("shutdown HTTP server: %w", err)
-		}
-
 		s.log.Warn("http server shutdown completed")
 	}
 	return nil
 }
+

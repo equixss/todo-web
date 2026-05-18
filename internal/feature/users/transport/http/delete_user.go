@@ -2,41 +2,36 @@ package users_transport_http
 
 import (
 	"fmt"
-	"net/http"
 
+	core_errors "github.com/equixss/todo-web/internal/core/errors"
 	core_http_middleware "github.com/equixss/todo-web/internal/core/transport/http/middleware"
-	core_logger "github.com/equixss/todo-web/internal/core/logger"
 	core_http_utils "github.com/equixss/todo-web/internal/core/transport/http/request"
-	core_http_response "github.com/equixss/todo-web/internal/core/transport/http/response"
+	"github.com/gin-gonic/gin"
 )
 
 type DeleteUserResponse UserDTOResponse
 
-func (h *UsersHTTPHandler) DeleteUser(rw http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	logger := core_logger.FromContext(ctx)
-	responseHandler := core_http_response.NewHTTPResponseHandler(logger, rw)
-
-	requestedUserID, err := core_http_utils.GetIntPathValue(r, "id")
+func (h *UsersHTTPHandler) DeleteUser(c *gin.Context) {
+	requestedUserID, err := core_http_utils.GetIntPathValue(c.Request, "id")
 	if err != nil {
-		responseHandler.ErrorResponse(err, "failed to get ID path param")
+		h.presenter.ErrorResponse(c, err, "failed to get ID path param")
 		return
 	}
 
-	authenticatedUserID, ok := core_http_middleware.GetUserIDFromContext(ctx)
+	authenticatedUserID, ok := core_http_middleware.GetUserIDFromContext(c)
 	if !ok {
-		responseHandler.ErrorResponse(fmt.Errorf("user not authenticated"), "authentication required")
+		h.presenter.ErrorResponse(c, core_errors.ErrUnauthorized, "authentication required")
 		return
 	}
 
 	if authenticatedUserID != requestedUserID {
-		responseHandler.ErrorResponse(fmt.Errorf("access denied"), "access denied")
+		h.presenter.ErrorResponse(c, fmt.Errorf("access denied"), "access denied")
 		return
 	}
 
-	if err := h.usersService.DeleteUser(ctx, requestedUserID); err != nil {
-		responseHandler.ErrorResponse(err, "failed to delete user")
+	if err := h.usersService.DeleteUser(c, requestedUserID); err != nil {
+		h.presenter.ErrorResponse(c, err, "failed to delete user")
 		return
 	}
-	responseHandler.ResponseNoContent()
+	h.presenter.ResponseNoContent(c)
 }

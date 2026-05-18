@@ -1,15 +1,7 @@
 package core_http_middleware
 
-import "net/http"
+import (
+	"github.com/gin-gonic/gin"
+)
 
-type Middleware func(http.Handler) http.Handler
-
-func ChainMiddleware(h http.Handler, m ...Middleware) http.Handler {
-	if len(m) == 0 {
-		return h
-	}
-	for i := len(m) - 1; i >= 0; i-- {
-		h = m[i](h)
-	}
-	return h
-}
+type Middleware = gin.HandlerFunc

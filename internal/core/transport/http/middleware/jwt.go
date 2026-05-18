@@ -3,13 +3,12 @@ package core_http_middleware
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"strings"
 
 	core_auth "github.com/equixss/todo-web/internal/core/auth"
 	core_errors "github.com/equixss/todo-web/internal/core/errors"
-	core_logger "github.com/equixss/todo-web/internal/core/logger"
 	core_http_response "github.com/equixss/todo-web/internal/core/transport/http/response"
+	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -27,11 +26,12 @@ func UserIDToContext(ctx context.Context, userID int) context.Context {
 }
 
 type JWTMiddleware struct {
-	config core_auth.Config
+	config    core_auth.Config
+	presenter *core_http_response.HTTPResponsePresenter
 }
 
-func NewJWTMiddleware(config core_auth.Config) *JWTMiddleware {
-	return &JWTMiddleware{config: config}
+func NewJWTMiddleware(config core_auth.Config, presenter *core_http_response.HTTPResponsePresenter) *JWTMiddleware {
+	return &JWTMiddleware{config: config, presenter: presenter}
 }
 
 type Claims struct {
@@ -40,57 +40,57 @@ type Claims struct {
 }
 
 func (m *JWTMiddleware) Authenticate() Middleware {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-			log := core_logger.FromContext(r.Context())
-			responseHandler := core_http_response.NewHTTPResponseHandler(log, rw)
+	return func(c *gin.Context) {
+		authHeader := c.GetHeader("Authorization")
+		if authHeader == "" {
+			m.presenter.ErrorResponse(
+				c,
+				fmt.Errorf("missing authorization header: %w", core_errors.ErrUnauthorized),
+				"authorization required",
+			)
+			return
+		}
 
-			authHeader := r.Header.Get("Authorization")
-			if authHeader == "" {
-				responseHandler.ErrorResponse(
-					fmt.Errorf("missing authorization header: %w", core_errors.ErrUnauthorized),
-					"authorization required",
-				)
-				return
+		parts := strings.SplitN(authHeader, " ", 2)
+		if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
+			m.presenter.ErrorResponse(
+				c,
+				fmt.Errorf("invalid authorization header format: %w", core_errors.ErrUnauthorized),
+				"authorization required",
+			)
+			return
+		}
+
+		tokenString := parts[1]
+		claims := &Claims{}
+
+		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 			}
-
-			parts := strings.SplitN(authHeader, " ", 2)
-			if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
-				responseHandler.ErrorResponse(
-					fmt.Errorf("invalid authorization header format: %w", core_errors.ErrUnauthorized),
-					"authorization required",
-				)
-				return
-			}
-
-			tokenString := parts[1]
-			claims := &Claims{}
-
-			token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-				if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-					return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-				}
-				return []byte(m.config.Secret), nil
-			})
-
-			if err != nil || !token.Valid {
-				responseHandler.ErrorResponse(
-					fmt.Errorf("invalid token: %w", core_errors.ErrUnauthorized),
-					"authorization required",
-				)
-				return
-			}
-
-			if claims.UserID <= 0 {
-				responseHandler.ErrorResponse(
-					fmt.Errorf("invalid user id in token: %w", core_errors.ErrUnauthorized),
-					"authorization required",
-				)
-				return
-			}
-
-			ctx := UserIDToContext(r.Context(), claims.UserID)
-			next.ServeHTTP(rw, r.WithContext(ctx))
+			return []byte(m.config.Secret), nil
 		})
+
+		if err != nil || !token.Valid {
+			m.presenter.ErrorResponse(
+				c,
+				fmt.Errorf("invalid token: %w", core_errors.ErrUnauthorized),
+				"authorization required",
+			)
+			return
+		}
+
+		if claims.UserID <= 0 {
+			m.presenter.ErrorResponse(
+				c,
+				fmt.Errorf("invalid user id in token: %w", core_errors.ErrUnauthorized),
+				"authorization required",
+			)
+			return
+		}
+
+		ctx := UserIDToContext(c.Request.Context(), claims.UserID)
+		c.Request = c.Request.WithContext(ctx)
+		c.Next()
 	}
 }

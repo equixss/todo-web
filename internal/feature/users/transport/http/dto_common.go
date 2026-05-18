@@ -34,9 +34,9 @@ type LoginRequest struct {
 }
 
 type LoginResponse struct {
-	User       UserDTOResponse `json:"user"`
-	AccessToken string         `json:"access_token"`
-	ExpiresAt   int64          `json:"expires_at"`
+	User        UserDTOResponse `json:"user"`
+	AccessToken string          `json:"access_token"`
+	ExpiresAt   int64           `json:"expires_at"`
 }
 
 func LoginResponseFromDomain(result domain.LoginResult) LoginResponse {
