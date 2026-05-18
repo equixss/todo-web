@@ -6,6 +6,7 @@ import (
 
 	"github.com/equixss/todo-web/internal/core/domain"
 	core_http_middleware "github.com/equixss/todo-web/internal/core/transport/http/middleware"
+	core_http_response_presenter "github.com/equixss/todo-web/internal/core/transport/http/response"
 	core_http_server "github.com/equixss/todo-web/internal/core/transport/http/server"
 )
 
@@ -39,12 +40,17 @@ type TasksService interface {
 }
 
 type TasksHTTPHandler struct {
+	presenter    *core_http_response_presenter.HTTPResponsePresenter
 	tasksService TasksService
 	jwtMW        *core_http_middleware.JWTMiddleware
 }
 
-func NewTasksHttpHandler(tasksService TasksService, jwtMW *core_http_middleware.JWTMiddleware) *TasksHTTPHandler {
-	return &TasksHTTPHandler{tasksService: tasksService, jwtMW: jwtMW}
+func NewTasksHttpHandler(
+	tasksService TasksService,
+	jwtMW *core_http_middleware.JWTMiddleware,
+	presenter *core_http_response_presenter.HTTPResponsePresenter,
+) *TasksHTTPHandler {
+	return &TasksHTTPHandler{tasksService: tasksService, jwtMW: jwtMW, presenter: presenter}
 }
 
 func (h *TasksHTTPHandler) Routes() []core_http_server.Route {

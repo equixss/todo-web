@@ -1,37 +1,31 @@
 package tasks_transport_http
 
 import (
-	"net/http"
-
 	"github.com/equixss/todo-web/internal/core/domain"
 	core_errors "github.com/equixss/todo-web/internal/core/errors"
 	core_http_middleware "github.com/equixss/todo-web/internal/core/transport/http/middleware"
-	core_logger "github.com/equixss/todo-web/internal/core/logger"
 	core_http_request "github.com/equixss/todo-web/internal/core/transport/http/request"
-	core_http_response "github.com/equixss/todo-web/internal/core/transport/http/response"
+	"github.com/gin-gonic/gin"
 )
 
 type CreateTaskRequest struct {
-	Title        string  `json:"title" validate:"required,min=1,max=100"`
-	Description  *string `json:"description" validate:"omitempty,min=1,max=100"`
+	Title       string  `json:"title" validate:"required,min=1,max=100"`
+	Description *string `json:"description" validate:"omitempty,min=1,max=100"`
 }
 
 type CreateTaskResponse TaskDTOResponse
 
-func (h *TasksHTTPHandler) CreateTask(rw http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	log := core_logger.FromContext(ctx)
-	responseHandler := core_http_response.NewHTTPResponseHandler(log, rw)
+func (h *TasksHTTPHandler) CreateTask(c *gin.Context) {
 
-	userID, ok := core_http_middleware.GetUserIDFromContext(ctx)
+	userID, ok := core_http_middleware.GetUserIDFromContext(c.Request.Context())
 	if !ok {
-		responseHandler.ErrorResponse(ErrUnauthorized, "authentication required")
+		h.presenter.ErrorResponse(c, core_errors.ErrUnauthorized, "authentication required")
 		return
 	}
 
 	var request CreateTaskRequest
-	if err := core_http_request.DecodeAndValidateRequest(r, &request); err != nil {
-		responseHandler.ErrorResponse(err, "failed to decode and validate HTTP request")
+	if err := core_http_request.DecodeAndValidateRequest(c.Request, &request); err != nil {
+		h.presenter.ErrorResponse(c, err, "failed to decode and validate HTTP request")
 		return
 	}
 
@@ -41,14 +35,12 @@ func (h *TasksHTTPHandler) CreateTask(rw http.ResponseWriter, r *http.Request) {
 		userID,
 	)
 
-	taskDomain, err := h.tasksService.CreateTask(ctx, taskDomain)
+	taskDomain, err := h.tasksService.CreateTask(c.Request.Context(), taskDomain)
 	if err != nil {
-		responseHandler.ErrorResponse(err, "failed to create task")
+		h.presenter.ErrorResponse(c, err, "failed to create task")
 		return
 	}
 
 	response := CreateTaskResponse(TaskDTOFromDomain(taskDomain))
-	responseHandler.JSONResponse(response, http.StatusCreated)
+	h.presenter.JSONResponse(c, response, 201)
 }
-
-var ErrUnauthorized = core_errors.ErrUnauthorized

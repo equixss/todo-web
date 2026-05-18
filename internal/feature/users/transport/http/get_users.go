@@ -4,26 +4,23 @@ import (
 	"fmt"
 	"net/http"
 
-	core_logger "github.com/equixss/todo-web/internal/core/logger"
-	core_http_utils "github.com/equixss/todo-web/internal/core/transport/http/request"
-	core_http_response "github.com/equixss/todo-web/internal/core/transport/http/response"
+	core_http_request "github.com/equixss/todo-web/internal/core/transport/http/request"
+	"github.com/gin-gonic/gin"
 )
 
 type GetUsersResponse []UserDTOResponse
 
-func (h *UsersHTTPHandler) GetUsers(rw http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	logger := core_logger.FromContext(ctx)
-	responseHandler := core_http_response.NewHTTPResponseHandler(logger, rw)
+func (h *UsersHTTPHandler) GetUsers(c *gin.Context) {
 
-	limit, offset, err := getLimitOffsetQueryParams(r)
+	limit, offset, err := getLimitOffsetQueryParams(c.Request)
 	if err != nil {
-		responseHandler.ErrorResponse(err, "failed to get limit/offset query params")
+		h.presenter.ErrorResponse(c, err, "failed to get limit/offset query params")
 		return
 	}
-	usersDomain, err := h.usersService.GetUsers(ctx, limit, offset)
+	usersDomain, err := h.usersService.GetUsers(c.Request.Context(), limit, offset)
 	if err != nil {
-		responseHandler.ErrorResponse(
+		h.presenter.ErrorResponse(
+			c,
 			err,
 			"failed to get users",
 		)
@@ -31,15 +28,15 @@ func (h *UsersHTTPHandler) GetUsers(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	response := GetUsersResponse(UsersDTOFromDomains(usersDomain))
-	responseHandler.JSONResponse(response, http.StatusOK)
+	h.presenter.JSONResponse(c, response, http.StatusOK)
 }
 
 func getLimitOffsetQueryParams(r *http.Request) (*int, *int, error) {
-	limit, err := core_http_utils.GetIntQueryParam(r, "limit")
+	limit, err := core_http_request.GetIntQueryParam(r, "limit")
 	if err != nil {
 		return nil, nil, fmt.Errorf(`parameter "limit": %w`, err)
 	}
-	offset, err := core_http_utils.GetIntQueryParam(r, "offset")
+	offset, err := core_http_request.GetIntQueryParam(r, "offset")
 	if err != nil {
 		return nil, nil, fmt.Errorf(`parameter "offset": %w`, err)
 	}

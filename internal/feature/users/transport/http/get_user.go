@@ -4,41 +4,37 @@ import (
 	"fmt"
 	"net/http"
 
+	core_errors "github.com/equixss/todo-web/internal/core/errors"
 	core_http_middleware "github.com/equixss/todo-web/internal/core/transport/http/middleware"
-	core_logger "github.com/equixss/todo-web/internal/core/logger"
-	core_http_utils "github.com/equixss/todo-web/internal/core/transport/http/request"
-	core_http_response "github.com/equixss/todo-web/internal/core/transport/http/response"
+	core_http_request "github.com/equixss/todo-web/internal/core/transport/http/request"
+	"github.com/gin-gonic/gin"
 )
 
 type GetUserResponse UserDTOResponse
 
-func (h *UsersHTTPHandler) GetUser(rw http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	logger := core_logger.FromContext(ctx)
-	responseHandler := core_http_response.NewHTTPResponseHandler(logger, rw)
-
-	requestedUserID, err := core_http_utils.GetIntPathValue(r, "id")
+func (h *UsersHTTPHandler) GetUser(c *gin.Context) {
+	requestedUserID, err := core_http_request.GetIntPathValue(c.Request, "id")
 	if err != nil {
-		responseHandler.ErrorResponse(err, "failed to get ID path param")
+		h.presenter.ErrorResponse(c, err, "failed to get ID path param")
 		return
 	}
 
-	authenticatedUserID, ok := core_http_middleware.GetUserIDFromContext(ctx)
+	authenticatedUserID, ok := core_http_middleware.GetUserIDFromContext(c.Request.Context())
 	if !ok {
-		responseHandler.ErrorResponse(fmt.Errorf("user not authenticated"), "authentication required")
+		h.presenter.ErrorResponse(c, core_errors.ErrUnauthorized, "authentication required")
 		return
 	}
 
 	if authenticatedUserID != requestedUserID {
-		responseHandler.ErrorResponse(fmt.Errorf("access denied"), "access denied")
+		h.presenter.ErrorResponse(c, fmt.Errorf("access denied"), "access denied")
 		return
 	}
 
-	userDomain, err := h.usersService.GetUser(ctx, requestedUserID)
+	userDomain, err := h.usersService.GetUser(c.Request.Context(), requestedUserID)
 	if err != nil {
-		responseHandler.ErrorResponse(err, "failed to get user")
+		h.presenter.ErrorResponse(c, err, "failed to get user")
 		return
 	}
 	response := GetUserResponse(UserDTOFromDomain(userDomain))
-	responseHandler.JSONResponse(response, http.StatusOK)
+	h.presenter.JSONResponse(c, response, http.StatusOK)
 }

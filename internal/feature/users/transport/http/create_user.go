@@ -4,10 +4,9 @@ import (
 	"net/http"
 
 	"github.com/equixss/todo-web/internal/core/domain"
-	core_logger "github.com/equixss/todo-web/internal/core/logger"
 	core_http_request "github.com/equixss/todo-web/internal/core/transport/http/request"
-	core_http_response "github.com/equixss/todo-web/internal/core/transport/http/response"
 	users_service "github.com/equixss/todo-web/internal/feature/users/service"
+	"github.com/gin-gonic/gin"
 )
 
 type CreateUserRequest struct {
@@ -19,36 +18,30 @@ type CreateUserRequest struct {
 
 type CreateUserResponse UserDTOResponse
 
-func (h *UsersHTTPHandler) CreateUser(rw http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	log := core_logger.FromContext(ctx)
-	responseHandler := core_http_response.NewHTTPResponseHandler(log, rw)
-
-	log.Debug("invoke CreateUser handler")
-
+func (h *UsersHTTPHandler) CreateUser(c *gin.Context) {
 	var request CreateUserRequest
 
-	if err := core_http_request.DecodeAndValidateRequest(r, &request); err != nil {
-		responseHandler.ErrorResponse(err, "failed to decode and validate HTTP request")
+	if err := core_http_request.DecodeAndValidateRequest(c.Request, &request); err != nil {
+		h.presenter.ErrorResponse(c, err, "failed to decode and validate HTTP request")
 		return
 	}
 
 	passwordHash, err := users_service.HashPassword(request.Password)
 	if err != nil {
-		responseHandler.ErrorResponse(err, "failed to hash password")
+		h.presenter.ErrorResponse(c, err, "failed to hash password")
 		return
 	}
 
-	userDomain, err := h.usersService.CreateUser(ctx, domainFromDTO(request, passwordHash))
+	userDomain, err := h.usersService.CreateUser(c.Request.Context(), domainFromDTO(request, passwordHash))
 
 	if err != nil {
-		responseHandler.ErrorResponse(err, "failed to create user")
+		h.presenter.ErrorResponse(c, err, "failed to create user")
 		return
 	}
 
 	response := CreateUserResponse(UserDTOFromDomain(userDomain))
 
-	responseHandler.JSONResponse(response, http.StatusCreated)
+	h.presenter.JSONResponse(c, response, http.StatusCreated)
 }
 
 func domainFromDTO(dto CreateUserRequest, passwordHash string) domain.User {
