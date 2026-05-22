@@ -11,10 +11,17 @@ type RefreshTokenRequest struct {
 	RefreshToken string `json:"refresh_token" validate:"required"`
 }
 
-type RefreshTokenResponse struct {
-	Tokens AuthTokensDTO `json:"tokens"`
-}
+type RefreshTokenResponse AuthTokensDTO
 
+// @Summary Обновление токена доступа
+// @Description Обновляет JWT токен доступа используя refresh токен. Требуется авторизация.
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param request body RefreshTokenRequest true "Запрос на обновление токена"
+// @Success 200 {object} RefreshTokenResponse
+// @Failure 401 {object} map[string]string "Требуется авторизация или недействительный refresh токен"
+// @Router /users/refresh [post]
 func (h *UsersHTTPHandler) RefreshToken(c *gin.Context) {
 	var request RefreshTokenRequest
 
@@ -29,8 +36,6 @@ func (h *UsersHTTPHandler) RefreshToken(c *gin.Context) {
 		return
 	}
 
-	response := RefreshTokenResponse{
-		Tokens: AuthTokensFromDomain(result.Tokens),
-	}
+	response := RefreshTokenResponse(AuthTokensFromDomain(result.Tokens))
 	h.presenter.JSONResponse(c, response, http.StatusOK)
 }

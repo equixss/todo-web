@@ -28,25 +28,6 @@ func UsersDTOFromDomains(users []domain.User) []UserDTOResponse {
 	return usersDTO
 }
 
-type LoginRequest struct {
-	Identifier string `json:"identifier" validate:"required"`
-	Password   string `json:"password" validate:"required"`
-}
-
-type LoginResponse struct {
-	User        UserDTOResponse `json:"user"`
-	AccessToken string          `json:"access_token"`
-	ExpiresAt   int64           `json:"expires_at"`
-}
-
-func LoginResponseFromDomain(result domain.LoginResult) LoginResponse {
-	return LoginResponse{
-		User:        UserDTOFromDomain(result.User),
-		AccessToken: result.Tokens.AccessToken,
-		ExpiresAt:   result.Tokens.ExpiresAt,
-	}
-}
-
 type AuthTokensDTO struct {
 	AccessToken string `json:"access_token"`
 	ExpiresAt   int64  `json:"expires_at"`

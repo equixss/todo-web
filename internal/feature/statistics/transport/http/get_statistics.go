@@ -19,6 +19,14 @@ type GetStatisticsResponse struct {
 	TasksAverageCompletedTime *string  `json:"tasks_average_completed_time"`
 }
 
+// @Summary Получение статистики задач пользователя
+// @Description Возвращает статистику выполнения задач текущего пользователя. Требуется авторизация.
+// @Tags statistics
+// @Accept json
+// @Produce json
+// @Success 200 {object} GetStatisticsResponse
+// @Failure 401 {object} map[string]string "Требуется авторизация"
+// @Router /statistics [get]
 func (h *StatisticsHTTPHandler) GetStatistics(c *gin.Context) {
 
 	userID, ok := core_http_middleware.GetUserIDFromContext(c.Request.Context())
@@ -42,7 +50,7 @@ func (h *StatisticsHTTPHandler) GetStatistics(c *gin.Context) {
 		h.presenter.ErrorResponse(c, err, "failed to get statistics")
 		return
 	}
-	h.presenter.JSONResponse(c, domainStatisticsToDTO(statistics), 200)
+	h.presenter.JSONResponse(c, domainStatisticsToDTO(statistics), http.StatusOK)
 }
 
 func domainStatisticsToDTO(statistics domain.Statistics) GetStatisticsResponse {

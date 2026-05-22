@@ -12,6 +12,15 @@ import (
 
 type GetUserResponse UserDTOResponse
 
+// @Summary Получение пользователя по ID
+// @Description Возвращает данные пользователя по его ID. Требуется авторизация.
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param id path int true "ID пользователя"
+// @Success 200 {object} GetUserResponse
+// @Failure 401 {object} map[string]string "Требуется авторизация"
+// @Router /users/{id} [get]
 func (h *UsersHTTPHandler) GetUser(c *gin.Context) {
 	requestedUserID, err := core_http_request.GetIntPathValue(c.Request, "id")
 	if err != nil {

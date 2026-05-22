@@ -9,6 +9,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type GetCurrentUserResponse UserDTOResponse
+
+// @Summary Получение текущего пользователя
+// @Description Возвращает данные текущего аутентифицированного пользователя. Требуется авторизация.
+// @Tags users
+// @Accept json
+// @Produce json
+// @Success 200 {object} GetCurrentUserResponse
+// @Failure 401 {object} map[string]string "Требуется авторизация"
+// @Router /users/me [get]
 func (h *UsersHTTPHandler) GetCurrentUser(c *gin.Context) {
 	log := core_logger.FromContext(c)
 	log.Debug("invoke GetCurrentUser handler")
@@ -29,6 +39,6 @@ func (h *UsersHTTPHandler) GetCurrentUser(c *gin.Context) {
 		return
 	}
 
-	response := UserDTOFromDomain(user)
+	response := GetCurrentUserResponse(UserDTOFromDomain(user))
 	h.presenter.JSONResponse(c, response, http.StatusOK)
 }

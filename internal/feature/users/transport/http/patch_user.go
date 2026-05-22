@@ -18,27 +18,24 @@ type PatchUserRequest struct {
 	Email core_http_types.Nullable[string] `json:"email"`
 }
 
-func (r *PatchUserRequest) Validate() error {
-	if r.Name.Set {
-		if r.Name.Value == nil {
-			return fmt.Errorf("'Name' can't be null")
-		}
-		nameLen := len([]rune(*r.Name.Value))
-		if nameLen < 3 || nameLen > 100 {
-			return fmt.Errorf("'Name' must be between 3 and 100 symbols")
-		}
-	}
-	if r.Phone.Set && r.Phone.Value != nil {
-		phoneLen := len([]rune(*r.Phone.Value))
-		if phoneLen < 10 || !domain.RussianPhoneRE.MatchString(*r.Phone.Value) {
-			return fmt.Errorf("invalid phone number: %s: %w", *r.Phone.Value, core_errors.ErrInvalidArgument)
-		}
-	}
-	return nil
+type PatchUserSwaggerRequest struct {
+	Name  *string `json:"name"`
+	Phone *string `json:"phone"`
+	Email *string `json:"email"`
 }
 
 type PatchUserResponse UserDTOResponse
 
+// @Summary Обновление пользователя
+// @Description Частичное обновление данных пользователя. Требуется авторизация.
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param id path int true "ID пользователя"
+// @Param request body PatchUserSwaggerRequest true "Запрос на обновление"
+// @Success 200 {object} PatchUserResponse
+// @Failure 401 {object} map[string]string "Требуется авторизация"
+// @Router /users/{id} [patch]
 func (h *UsersHTTPHandler) PatchUser(c *gin.Context) {
 	requestedUserID, err := core_http_request.GetIntPathValue(c.Request, "id")
 	if err != nil {
@@ -72,6 +69,25 @@ func (h *UsersHTTPHandler) PatchUser(c *gin.Context) {
 
 	response := PatchUserResponse(UserDTOFromDomain(userDomain))
 	h.presenter.JSONResponse(c, response, http.StatusOK)
+}
+
+func (r *PatchUserRequest) Validate() error {
+	if r.Name.Set {
+		if r.Name.Value == nil {
+			return fmt.Errorf("'Name' can't be null")
+		}
+		nameLen := len([]rune(*r.Name.Value))
+		if nameLen < 3 || nameLen > 100 {
+			return fmt.Errorf("'Name' must be between 3 and 100 symbols")
+		}
+	}
+	if r.Phone.Set && r.Phone.Value != nil {
+		phoneLen := len([]rune(*r.Phone.Value))
+		if phoneLen < 10 || !domain.RussianPhoneRE.MatchString(*r.Phone.Value) {
+			return fmt.Errorf("invalid phone number: %s: %w", *r.Phone.Value, core_errors.ErrInvalidArgument)
+		}
+	}
+	return nil
 }
 
 func userPatchFromRequest(request PatchUserRequest) domain.UserPatch {

@@ -63,3 +63,6 @@ todo-deploy:
 	
 ps:
 	@docker compose ps -a
+
+swag:
+	@swag init --parseDependency -g ./cmd/todo/main.go

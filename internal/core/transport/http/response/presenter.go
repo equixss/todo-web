@@ -1,4 +1,4 @@
-package core_http_response_presenter
+package core_http_response
 
 import (
 	"encoding/json"
@@ -11,6 +11,12 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
+
+type ErrorResponse struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+	Error   error  `json:"error"`
+}
 
 type HTTPResponsePresenter struct {
 }
@@ -93,8 +99,9 @@ func (p *HTTPResponsePresenter) errorResponse(
 	err error,
 	msg string,
 ) {
-	c.AbortWithStatusJSON(statusCode, gin.H{
-		"message": msg,
-		"error":   err.Error(),
+	c.AbortWithStatusJSON(statusCode, ErrorResponse{
+		Message: msg,
+		Code:    statusCode,
+		Error:   err,
 	})
 }

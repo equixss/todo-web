@@ -10,6 +10,16 @@ import (
 
 type GetUsersResponse []UserDTOResponse
 
+// @Summary Получение списка пользователей
+// @Description Возвращает список всех пользователей. Требуется авторизация.
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param limit query int false "Лимит количества записей"
+// @Param offset query int false "Смещение для пагинации"
+// @Success 200 {object} GetUsersResponse
+// @Failure 401 {object} map[string]string "Требуется авторизация"
+// @Router /users [get]
 func (h *UsersHTTPHandler) GetUsers(c *gin.Context) {
 
 	limit, offset, err := getLimitOffsetQueryParams(c.Request)
