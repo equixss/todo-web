@@ -6,9 +6,12 @@ import (
 	"fmt"
 	"net/http"
 
+	_ "github.com/equixss/todo-web/docs"
 	core_logger "github.com/equixss/todo-web/internal/core/logger"
 	core_http_middleware "github.com/equixss/todo-web/internal/core/transport/http/middleware"
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	"go.uber.org/zap"
 )
 
@@ -30,6 +33,12 @@ func NewHTTPServer(
 	if len(middleware) > 0 {
 		engine.Use(middleware...)
 	}
+
+	// Swagger UI
+	engine.GET("/swagger/*any", ginSwagger.WrapHandler(
+		swaggerFiles.Handler,
+		ginSwagger.DefaultModelsExpandDepth(1),
+	))
 
 	return &HTTPServer{
 		Engine:     engine,
@@ -72,4 +81,3 @@ func (s *HTTPServer) Run(ctx context.Context) error {
 	}
 	return nil
 }
-

@@ -1,0 +1,697 @@
+basePath: /
+definitions:
+  github_com_equixss_todo-web_internal_core_transport_http_types.Nullable-bool:
+    properties:
+      set:
+        type: boolean
+      value:
+        type: boolean
+    type: object
+  github_com_equixss_todo-web_internal_core_transport_http_types.Nullable-string:
+    properties:
+      set:
+        type: boolean
+      value:
+        type: string
+    type: object
+  internal_feature_statistics_transport_http.GetStatisticsResponse:
+    properties:
+      tasks_average_completed_time:
+        type: string
+      tasks_completed:
+        type: integer
+      tasks_completed_percent:
+        type: number
+      tasks_created:
+        type: integer
+    type: object
+  internal_feature_tasks_transport_http.CreateTaskRequest:
+    properties:
+      description:
+        maxLength: 100
+        minLength: 1
+        type: string
+      title:
+        maxLength: 100
+        minLength: 1
+        type: string
+    required:
+    - title
+    type: object
+  internal_feature_tasks_transport_http.CreateTaskResponse:
+    properties:
+      author_user_id:
+        type: integer
+      completed:
+        type: boolean
+      completed_at:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      title:
+        type: string
+      version:
+        type: integer
+    type: object
+  internal_feature_tasks_transport_http.GetTaskResponse:
+    properties:
+      author_user_id:
+        type: integer
+      completed:
+        type: boolean
+      completed_at:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      title:
+        type: string
+      version:
+        type: integer
+    type: object
+  internal_feature_tasks_transport_http.PatchTaskRequest:
+    properties:
+      completed:
+        $ref: '#/definitions/github_com_equixss_todo-web_internal_core_transport_http_types.Nullable-bool'
+      description:
+        $ref: '#/definitions/github_com_equixss_todo-web_internal_core_transport_http_types.Nullable-string'
+      title:
+        $ref: '#/definitions/github_com_equixss_todo-web_internal_core_transport_http_types.Nullable-string'
+    type: object
+  internal_feature_tasks_transport_http.PatchTaskResponse:
+    properties:
+      author_user_id:
+        type: integer
+      completed:
+        type: boolean
+      completed_at:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      title:
+        type: string
+      version:
+        type: integer
+    type: object
+  internal_feature_tasks_transport_http.TaskDTOResponse:
+    properties:
+      author_user_id:
+        type: integer
+      completed:
+        type: boolean
+      completed_at:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      title:
+        type: string
+      version:
+        type: integer
+    type: object
+  internal_feature_users_transport_http.CreateUserRequest:
+    properties:
+      email:
+        type: string
+      name:
+        maxLength: 100
+        minLength: 3
+        type: string
+      password:
+        minLength: 6
+        type: string
+      phone:
+        maxLength: 15
+        minLength: 10
+        type: string
+    required:
+    - name
+    - password
+    type: object
+  internal_feature_users_transport_http.CreateUserResponse:
+    properties:
+      email:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      phone:
+        type: string
+      version:
+        type: integer
+    type: object
+  internal_feature_users_transport_http.GetCurrentUserResponse:
+    properties:
+      email:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      phone:
+        type: string
+      version:
+        type: integer
+    type: object
+  internal_feature_users_transport_http.GetUserResponse:
+    properties:
+      email:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      phone:
+        type: string
+      version:
+        type: integer
+    type: object
+  internal_feature_users_transport_http.LoginRequest:
+    properties:
+      identifier:
+        type: string
+      password:
+        type: string
+    required:
+    - identifier
+    - password
+    type: object
+  internal_feature_users_transport_http.LoginResponse:
+    properties:
+      access_token:
+        type: string
+      expires_at:
+        description: Время истечения токена (Unix timestamp)
+        type: integer
+      user:
+        $ref: '#/definitions/internal_feature_users_transport_http.UserDTOResponse'
+    type: object
+  internal_feature_users_transport_http.PatchUserResponse:
+    properties:
+      email:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      phone:
+        type: string
+      version:
+        type: integer
+    type: object
+  internal_feature_users_transport_http.PatchUserSwaggerRequest:
+    properties:
+      email:
+        type: string
+      name:
+        type: string
+      phone:
+        type: string
+    type: object
+  internal_feature_users_transport_http.RefreshTokenRequest:
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
+  internal_feature_users_transport_http.RefreshTokenResponse:
+    properties:
+      access_token:
+        type: string
+      expires_at:
+        type: integer
+    type: object
+  internal_feature_users_transport_http.UserDTOResponse:
+    properties:
+      email:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      phone:
+        type: string
+      version:
+        type: integer
+    type: object
+host: localhost:5050
+info:
+  contact: {}
+  description: Swagger documentation for Todo Web API in Russian
+  title: Todo API
+  version: "1.0"
+paths:
+  /statistics:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает статистику выполнения задач текущего пользователя. Требуется
+        авторизация.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_feature_statistics_transport_http.GetStatisticsResponse'
+        "401":
+          description: Требуется авторизация
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Получение статистики задач пользователя
+      tags:
+      - statistics
+  /tasks:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает список всех задач текущего пользователя. Требуется авторизация.
+      parameters:
+      - description: Лимит количества записей
+        in: query
+        name: limit
+        type: integer
+      - description: Смещение для пагинации
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_feature_tasks_transport_http.TaskDTOResponse'
+            type: array
+        "401":
+          description: Требуется авторизация
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Получение списка задач пользователя
+      tags:
+      - tasks
+    post:
+      consumes:
+      - application/json
+      description: Создает новую задачу. Требуется авторизация.
+      parameters:
+      - description: Запрос на создание задачи
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_feature_tasks_transport_http.CreateTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/internal_feature_tasks_transport_http.CreateTaskResponse'
+        "400":
+          description: Некорректные данные запроса
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Требуется авторизация
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Создание новой задачи
+      tags:
+      - tasks
+  /tasks/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Удаляет задачу по её ID. Требуется авторизация.
+      parameters:
+      - description: ID задачи
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Задача успешно удалена
+        "401":
+          description: Требуется авторизация
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Удаление задачи
+      tags:
+      - tasks
+    get:
+      consumes:
+      - application/json
+      description: Возвращает данные задачи по её ID. Требуется авторизация.
+      parameters:
+      - description: ID задачи
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_feature_tasks_transport_http.GetTaskResponse'
+        "401":
+          description: Требуется авторизация
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Получение задачи по ID
+      tags:
+      - tasks
+    patch:
+      consumes:
+      - application/json
+      description: Частичное обновление данных задачи. Требуется авторизация.
+      parameters:
+      - description: ID задачи
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Запрос на обновление
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_feature_tasks_transport_http.PatchTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_feature_tasks_transport_http.PatchTaskResponse'
+        "401":
+          description: Требуется авторизация
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Обновление задачи
+      tags:
+      - tasks
+  /users:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает список всех пользователей. Требуется авторизация.
+      parameters:
+      - description: Лимит количества записей
+        in: query
+        name: limit
+        type: integer
+      - description: Смещение для пагинации
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_feature_users_transport_http.UserDTOResponse'
+            type: array
+        "401":
+          description: Требуется авторизация
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Получение списка пользователей
+      tags:
+      - users
+    post:
+      consumes:
+      - application/json
+      description: Создает нового пользователя в системе. Требуется авторизация.
+      parameters:
+      - description: Запрос на создание пользователя
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_feature_users_transport_http.CreateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/internal_feature_users_transport_http.CreateUserResponse'
+        "400":
+          description: Некорректные данные запроса
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Требуется авторизация
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Создание нового пользователя
+      tags:
+      - users
+  /users/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Удаляет пользователя по его ID. Требуется авторизация.
+      parameters:
+      - description: ID пользователя
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Пользователь успешно удален
+        "401":
+          description: Требуется авторизация
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Удаление пользователя
+      tags:
+      - users
+    get:
+      consumes:
+      - application/json
+      description: Возвращает данные пользователя по его ID. Требуется авторизация.
+      parameters:
+      - description: ID пользователя
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_feature_users_transport_http.GetUserResponse'
+        "401":
+          description: Требуется авторизация
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Получение пользователя по ID
+      tags:
+      - users
+    patch:
+      consumes:
+      - application/json
+      description: Частичное обновление данных пользователя. Требуется авторизация.
+      parameters:
+      - description: ID пользователя
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Запрос на обновление
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_feature_users_transport_http.PatchUserSwaggerRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_feature_users_transport_http.PatchUserResponse'
+        "401":
+          description: Требуется авторизация
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Обновление пользователя
+      tags:
+      - users
+  /users/login:
+    post:
+      consumes:
+      - application/json
+      description: Аутентификация пользователя по email или телефону. Возвращает JWT
+        токен доступа и refresh токен.
+      parameters:
+      - description: Запрос на вход
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_feature_users_transport_http.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_feature_users_transport_http.LoginResponse'
+        "401":
+          description: Неверные учетные данные
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Вход в систему
+      tags:
+      - users
+  /users/logout:
+    post:
+      consumes:
+      - application/json
+      description: Отзывает токены пользователя. Требуется авторизация.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Требуется авторизация
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Выход из системы
+      tags:
+      - users
+  /users/me:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает данные текущего аутентифицированного пользователя. Требуется
+        авторизация.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_feature_users_transport_http.GetCurrentUserResponse'
+        "401":
+          description: Требуется авторизация
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Получение текущего пользователя
+      tags:
+      - users
+  /users/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Обновляет JWT токен доступа используя refresh токен. Требуется
+        авторизация.
+      parameters:
+      - description: Запрос на обновление токена
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_feature_users_transport_http.RefreshTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_feature_users_transport_http.RefreshTokenResponse'
+        "401":
+          description: Требуется авторизация или недействительный refresh токен
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Обновление токена доступа
+      tags:
+      - users
+schemes:
+- http
+swagger: "2.0"

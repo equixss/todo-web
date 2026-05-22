@@ -11,6 +11,15 @@ import (
 
 type DeleteTaskResponse TaskDTOResponse
 
+// @Summary Удаление задачи
+// @Description Удаляет задачу по её ID. Требуется авторизация.
+// @Tags tasks
+// @Accept json
+// @Produce json
+// @Param id path int true "ID задачи"
+// @Success 204 "Задача успешно удалена"
+// @Failure 401 {object} map[string]string "Требуется авторизация"
+// @Router /tasks/{id} [delete]
 func (h *TasksHTTPHandler) DeleteTask(c *gin.Context) {
 
 	authUserID, ok := core_http_middleware.GetUserIDFromContext(c.Request.Context())

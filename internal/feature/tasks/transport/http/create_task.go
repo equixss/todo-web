@@ -1,6 +1,8 @@
 package tasks_transport_http
 
 import (
+	"net/http"
+
 	"github.com/equixss/todo-web/internal/core/domain"
 	core_errors "github.com/equixss/todo-web/internal/core/errors"
 	core_http_middleware "github.com/equixss/todo-web/internal/core/transport/http/middleware"
@@ -15,6 +17,17 @@ type CreateTaskRequest struct {
 
 type CreateTaskResponse TaskDTOResponse
 
+// @Summary Создание новой задачи
+// @Description Создает новую задачу. Требуется авторизация.
+// @Tags tasks
+// @Accept json
+// @Produce json
+// @Param request body CreateTaskRequest true "Запрос на создание задачи"
+// @Success 201 {object} CreateTaskResponse
+// @Failure 400 {object} map[string]string "Некорректные данные запроса"
+// @Failure 401 {object} map[string]string "Требуется авторизация"
+// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
+// @Router /tasks [post]
 func (h *TasksHTTPHandler) CreateTask(c *gin.Context) {
 
 	userID, ok := core_http_middleware.GetUserIDFromContext(c.Request.Context())
@@ -42,5 +55,5 @@ func (h *TasksHTTPHandler) CreateTask(c *gin.Context) {
 	}
 
 	response := CreateTaskResponse(TaskDTOFromDomain(taskDomain))
-	h.presenter.JSONResponse(c, response, 201)
+	h.presenter.JSONResponse(c, response, http.StatusCreated)
 }

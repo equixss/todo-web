@@ -9,8 +9,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type DeleteUserResponse UserDTOResponse
-
+// @Summary Удаление пользователя
+// @Description Удаляет пользователя по его ID. Требуется авторизация.
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param id path int true "ID пользователя"
+// @Success 204 "Пользователь успешно удален"
+// @Failure 401 {object} map[string]string "Требуется авторизация"
+// @Router /users/{id} [delete]
 func (h *UsersHTTPHandler) DeleteUser(c *gin.Context) {
 	requestedUserID, err := core_http_utils.GetIntPathValue(c.Request, "id")
 	if err != nil {

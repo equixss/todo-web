@@ -2,6 +2,7 @@ package tasks_transport_http
 
 import (
 	"errors"
+	"net/http"
 
 	core_errors "github.com/equixss/todo-web/internal/core/errors"
 	core_http_middleware "github.com/equixss/todo-web/internal/core/transport/http/middleware"
@@ -11,6 +12,15 @@ import (
 
 type GetTaskResponse TaskDTOResponse
 
+// @Summary Получение задачи по ID
+// @Description Возвращает данные задачи по её ID. Требуется авторизация.
+// @Tags tasks
+// @Accept json
+// @Produce json
+// @Param id path int true "ID задачи"
+// @Success 200 {object} GetTaskResponse
+// @Failure 401 {object} map[string]string "Требуется авторизация"
+// @Router /tasks/{id} [get]
 func (h *TasksHTTPHandler) GetTask(c *gin.Context) {
 
 	userID, ok := core_http_middleware.GetUserIDFromContext(c.Request.Context())
@@ -36,5 +46,5 @@ func (h *TasksHTTPHandler) GetTask(c *gin.Context) {
 	}
 
 	response := GetTaskResponse(TaskDTOFromDomain(taskDomain))
-	h.presenter.JSONResponse(c, response, 200)
+	h.presenter.JSONResponse(c, response, http.StatusOK)
 }

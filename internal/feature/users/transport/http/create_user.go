@@ -18,6 +18,17 @@ type CreateUserRequest struct {
 
 type CreateUserResponse UserDTOResponse
 
+// @Summary Создание нового пользователя
+// @Description Создает нового пользователя в системе. Требуется авторизация.
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param request body CreateUserRequest true "Запрос на создание пользователя"
+// @Success 201 {object} CreateUserResponse
+// @Failure 400 {object} map[string]string "Некорректные данные запроса"
+// @Failure 401 {object} map[string]string "Требуется авторизация"
+// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
+// @Router /users [post]
 func (h *UsersHTTPHandler) CreateUser(c *gin.Context) {
 	var request CreateUserRequest
 

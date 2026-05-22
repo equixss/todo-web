@@ -12,6 +12,16 @@ import (
 
 type GetTasksResponse []TaskDTOResponse
 
+// @Summary Получение списка задач пользователя
+// @Description Возвращает список всех задач текущего пользователя. Требуется авторизация.
+// @Tags tasks
+// @Accept json
+// @Produce json
+// @Param limit query int false "Лимит количества записей"
+// @Param offset query int false "Смещение для пагинации"
+// @Success 200 {object} GetTasksResponse
+// @Failure 401 {object} map[string]string "Требуется авторизация"
+// @Router /tasks [get]
 func (h *TasksHTTPHandler) GetTasks(c *gin.Context) {
 
 	userID, ok := core_http_middleware.GetUserIDFromContext(c.Request.Context())

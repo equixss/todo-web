@@ -27,6 +27,12 @@ import (
 	"go.uber.org/zap"
 )
 
+// @title Todo API
+// @version 1.0
+// @description Swagger documentation for Todo Web API in Russian
+// @host localhost:5050
+// @BasePath /
+// @schemes http
 func main() {
 	config := core_config.NewConfigMust()
 	time.Local = config.TimeZone
